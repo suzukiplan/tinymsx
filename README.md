@@ -1,4 +1,9 @@
-# TinyMSX
+# [WIP] TinyMSX
+
+## WIP status
+
+It's not even close to being a concept yet.
+I'm going to identify TODO while I'm building it.
 
 ## What is TinyMSX
 
