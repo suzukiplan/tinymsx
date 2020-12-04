@@ -26,31 +26,38 @@
  */
 #include "tinymsx.h"
 
-static unsigned char readMemory(void* arg, unsigned short addr)
-{
-    return 0;
-}
-
-static void writeMemory(void* arg, unsigned short addr, unsigned char value)
-{
-}
-
-static unsigned char inPort(void* arg, unsigned char port)
-{
-    return 0;
-}
-
-static void outPort(void* arg, unsigned char port, unsigned char value)
-{
-}
+unsigned char tinyMSX_readMemory(void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }
+void tinyMSX_writeMemory(void* arg, unsigned short addr, unsigned char value) { ((TinyMSX*)arg)->writeMemory(addr, value); }
+unsigned char tinyMSX_inPort(void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }
+void tinyMSX_outPort(void* arg, unsigned char port, unsigned char value) { ((TinyMSX*)arg)->outPort(port, value); }
 
 TinyMSX::TinyMSX()
 {
-    this->cpu = new Z80(readMemory, writeMemory, inPort, outPort, this);
+    this->cpu = new Z80(tinyMSX_readMemory, tinyMSX_writeMemory, tinyMSX_inPort, tinyMSX_outPort, this);
 }
 
 TinyMSX::~TinyMSX()
 {
     if (this->cpu) delete this->cpu;
     this->cpu = NULL;
+}
+
+unsigned char TinyMSX::readMemory(unsigned short addr)
+{
+    return 0; // TODO: need implement
+}
+
+void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
+{
+    // TODO: need implement
+}
+
+unsigned char TinyMSX::inPort(unsigned char port)
+{
+    return 0; // TODO: need implement
+}
+
+void TinyMSX::outPort(unsigned char port, unsigned char value)
+{
+    // TODO: need implement
 }

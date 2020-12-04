@@ -31,4 +31,8 @@ class TinyMSX {
         Z80* cpu;
         TinyMSX();
         ~TinyMSX();
+        unsigned char readMemory(unsigned short addr);
+        void writeMemory(unsigned short addr, unsigned char value);
+        unsigned char inPort(unsigned char port);
+        void outPort(unsigned char port, unsigned char value);
 };
