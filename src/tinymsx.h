@@ -24,12 +24,17 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
+#include <stdio.h>
 #include "z80.hpp"
 
 class TinyMSX {
     public:
         Z80* cpu;
-        TinyMSX();
+        unsigned char* ram;
+        unsigned char* rom;
+        size_t ramSize;
+        size_t romSize;
+        TinyMSX(void* rom, size_t romSize, size_t ramSize);
         ~TinyMSX();
         unsigned char readMemory(unsigned short addr);
         void writeMemory(unsigned short addr, unsigned char value);

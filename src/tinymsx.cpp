@@ -26,20 +26,27 @@
  */
 #include "tinymsx.h"
 
-unsigned char tinyMSX_readMemory(void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }
-void tinyMSX_writeMemory(void* arg, unsigned short addr, unsigned char value) { ((TinyMSX*)arg)->writeMemory(addr, value); }
-unsigned char tinyMSX_inPort(void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }
-void tinyMSX_outPort(void* arg, unsigned char port, unsigned char value) { ((TinyMSX*)arg)->outPort(port, value); }
+unsigned char TinyMSX_readMemory(void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }
+void TinyMSX_writeMemory(void* arg, unsigned short addr, unsigned char value) { ((TinyMSX*)arg)->writeMemory(addr, value); }
+unsigned char TinyMSX_inPort(void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }
+void TinyMSX_outPort(void* arg, unsigned char port, unsigned char value) { ((TinyMSX*)arg)->outPort(port, value); }
 
-TinyMSX::TinyMSX()
+TinyMSX::TinyMSX(void* rom, size_t romSize, size_t ramSize)
 {
-    this->cpu = new Z80(tinyMSX_readMemory, tinyMSX_writeMemory, tinyMSX_inPort, tinyMSX_outPort, this);
+    this->rom = (unsigned char*)malloc(romSize);
+    if (this->rom) memcpy(this->rom, rom, romSize);
+    this->ram = (unsigned char*)malloc(ramSize);
+    this->cpu = new Z80(TinyMSX_readMemory, TinyMSX_writeMemory, TinyMSX_inPort, TinyMSX_outPort, this);
 }
 
 TinyMSX::~TinyMSX()
 {
     if (this->cpu) delete this->cpu;
     this->cpu = NULL;
+    if (this->ram) free(this->ram);
+    this->ram = NULL;
+    if (this->rom) free(this->rom);
+    this->rom = NULL;
 }
 
 unsigned char TinyMSX::readMemory(unsigned short addr)
