@@ -28,16 +28,34 @@
 #include "z80.hpp"
 
 class TinyMSX {
+    private:
+        unsigned char pad[2];
     public:
+        struct VideoDisplayProcessor {
+            unsigned char ram[0x4000];      // video memory
+            unsigned short p[16];           // palette register
+            unsigned char r[64];            // controll register
+            unsigned char s[10];            // status register
+            unsigned int addr;              // address counter (17bit)
+            unsigned char reserved[2];      // reserved area
+        } vdp;
+        unsigned char ram[0x2000];
         Z80* cpu;
-        unsigned char* ram;
         unsigned char* rom;
-        size_t ramSize;
         size_t romSize;
-        TinyMSX(void* rom, size_t romSize, size_t ramSize);
+        TinyMSX(void* rom, size_t romSize);
         ~TinyMSX();
+
+        // Z80 callback functions
         unsigned char readMemory(unsigned short addr);
         void writeMemory(unsigned short addr, unsigned char value);
         unsigned char inPort(unsigned char port);
         void outPort(unsigned char port, unsigned char value);
+
+    private:
+        inline unsigned char vdpReadData();
+        inline unsigned char vdpReadStatus();
+        inline void vdpWriteData(unsigned char value);
+        inline void vdpWriteAddress(unsigned char value);
+        inline void psgWrite(unsigned char value);
 };

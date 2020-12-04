@@ -31,11 +31,10 @@ void TinyMSX_writeMemory(void* arg, unsigned short addr, unsigned char value) { 
 unsigned char TinyMSX_inPort(void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }
 void TinyMSX_outPort(void* arg, unsigned char port, unsigned char value) { ((TinyMSX*)arg)->outPort(port, value); }
 
-TinyMSX::TinyMSX(void* rom, size_t romSize, size_t ramSize)
+TinyMSX::TinyMSX(void* rom, size_t romSize)
 {
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) memcpy(this->rom, rom, romSize);
-    this->ram = (unsigned char*)malloc(ramSize);
     this->cpu = new Z80(TinyMSX_readMemory, TinyMSX_writeMemory, TinyMSX_inPort, TinyMSX_outPort, this);
 }
 
@@ -43,28 +42,61 @@ TinyMSX::~TinyMSX()
 {
     if (this->cpu) delete this->cpu;
     this->cpu = NULL;
-    if (this->ram) free(this->ram);
-    this->ram = NULL;
     if (this->rom) free(this->rom);
     this->rom = NULL;
 }
 
 unsigned char TinyMSX::readMemory(unsigned short addr)
 {
-    return 0; // TODO: need implement
+    if (addr < 0x8000) {
+        return this->rom[addr];
+    } else if (addr < 0xA000) {
+        return 0; // unused in SG-1000
+    } else {
+        return this->ram[addr & 0x1FFF];
+    }
 }
 
 void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
 {
-    // TODO: need implement
+    if (addr < 0x8000) {
+        return;
+    } else if (addr < 0xA000) {
+        return;
+    } else {
+        this->ram[addr & 0x1FFF] = value;
+    }
 }
 
 unsigned char TinyMSX::inPort(unsigned char port)
 {
-    return 0; // TODO: need implement
+    switch (port) {
+        case 0xC0:
+        case 0xDC:
+            return this->pad[0];
+        case 0xC1:
+        case 0xDD:
+            return this->pad[0];
+        case 0xBE:
+            return this->vdpReadData();
+        case 0xBF:
+            return this->vdpReadStatus();
+    }
+    return 0;
 }
 
 void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
-    // TODO: need implement
+    switch (port) {
+        case 0x7E:
+        case 0x7F:
+            this->psgWrite(value);
+            break;
+        case 0xBE:
+            this->vdpWriteData(value);
+            break;
+        case 0xBF:
+            this->vdpWriteAddress(value);
+            break;
+    }
 }
