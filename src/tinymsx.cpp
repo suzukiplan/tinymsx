@@ -81,6 +81,17 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
     return 0;
 }
 
+inline unsigned char TinyMSX::vdpReadData()
+{
+    this->vdp.addr &= 0x3FFF;
+    return this->vdp.ram[this->vdp.addr++];
+}
+
+inline unsigned char TinyMSX::vdpReadStatus()
+{
+    return this->vdp.stat;
+}
+
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
     switch (port) {
@@ -95,6 +106,17 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             this->vdpWriteAddress(value);
             break;
     }
+}
+
+inline void TinyMSX::psgWrite(unsigned char value)
+{
+    // TODO: PSG write data procedure
+}
+
+inline void TinyMSX::vdpWriteData(unsigned char value)
+{
+    this->vdp.addr &= 0x3FFF;
+    this->vdp.ram[this->vdp.addr++] = value;
 }
 
 inline void TinyMSX::vdpWriteAddress(unsigned char value)
