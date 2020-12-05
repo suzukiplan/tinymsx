@@ -72,7 +72,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             return this->pad[0];
         case 0xC1:
         case 0xDD:
-            return this->pad[0];
+            return this->pad[1];
         case 0xBE:
             return this->vdpReadData();
         case 0xBF:
