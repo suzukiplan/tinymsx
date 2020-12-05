@@ -32,12 +32,12 @@ class TinyMSX {
         unsigned char pad[2];
     public:
         struct VideoDisplayProcessor {
-            unsigned char ram[0x4000];      // video memory
-            unsigned short p[16];           // palette register
-            unsigned char r[64];            // controll register
-            unsigned char s[10];            // status register
-            unsigned int addr;              // address counter (17bit)
-            unsigned char reserved[2];      // reserved area
+            unsigned char ram[0x4000];
+            unsigned char reg[8];
+            unsigned char tmpAddr[2];
+            unsigned short addr;
+            unsigned char stat;
+            unsigned char latch;
         } vdp;
         unsigned char ram[0x2000];
         Z80* cpu;
@@ -46,16 +46,19 @@ class TinyMSX {
         TinyMSX(void* rom, size_t romSize);
         ~TinyMSX();
 
-        // Z80 callback functions
-        unsigned char readMemory(unsigned short addr);
-        void writeMemory(unsigned short addr, unsigned char value);
-        unsigned char inPort(unsigned char port);
-        void outPort(unsigned char port, unsigned char value);
-
     private:
+        inline unsigned char readMemory(unsigned short addr);
+        inline void writeMemory(unsigned short addr, unsigned char value);
+        inline unsigned char inPort(unsigned char port);
+        inline void outPort(unsigned char port, unsigned char value);
         inline unsigned char vdpReadData();
         inline unsigned char vdpReadStatus();
         inline void vdpWriteData(unsigned char value);
         inline void vdpWriteAddress(unsigned char value);
+        inline void updateVdpAddress();
+        inline void updateVdpRegister();
         inline void psgWrite(unsigned char value);
+        inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
+        inline int getTransparentPalette() { return vdp.reg[7] & 0b00001111; }
+        inline void consumeClock(int clocks);
 };

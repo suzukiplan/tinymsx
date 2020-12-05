@@ -26,16 +26,12 @@
  */
 #include "tinymsx.h"
 
-unsigned char TinyMSX_readMemory(void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }
-void TinyMSX_writeMemory(void* arg, unsigned short addr, unsigned char value) { ((TinyMSX*)arg)->writeMemory(addr, value); }
-unsigned char TinyMSX_inPort(void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }
-void TinyMSX_outPort(void* arg, unsigned char port, unsigned char value) { ((TinyMSX*)arg)->outPort(port, value); }
-
 TinyMSX::TinyMSX(void* rom, size_t romSize)
 {
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) memcpy(this->rom, rom, romSize);
-    this->cpu = new Z80(TinyMSX_readMemory, TinyMSX_writeMemory, TinyMSX_inPort, TinyMSX_outPort, this);
+    this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
+    this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
 }
 
 TinyMSX::~TinyMSX()
@@ -46,7 +42,7 @@ TinyMSX::~TinyMSX()
     this->rom = NULL;
 }
 
-unsigned char TinyMSX::readMemory(unsigned short addr)
+inline unsigned char TinyMSX::readMemory(unsigned short addr)
 {
     if (addr < 0x8000) {
         return this->rom[addr];
@@ -57,7 +53,7 @@ unsigned char TinyMSX::readMemory(unsigned short addr)
     }
 }
 
-void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
+inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
 {
     if (addr < 0x8000) {
         return;
@@ -68,7 +64,7 @@ void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
     }
 }
 
-unsigned char TinyMSX::inPort(unsigned char port)
+inline unsigned char TinyMSX::inPort(unsigned char port)
 {
     switch (port) {
         case 0xC0:
@@ -85,7 +81,7 @@ unsigned char TinyMSX::inPort(unsigned char port)
     return 0;
 }
 
-void TinyMSX::outPort(unsigned char port, unsigned char value)
+inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
     switch (port) {
         case 0x7E:
@@ -99,4 +95,34 @@ void TinyMSX::outPort(unsigned char port, unsigned char value)
             this->vdpWriteAddress(value);
             break;
     }
+}
+
+inline void TinyMSX::vdpWriteAddress(unsigned char value)
+{
+    this->vdp.latch &= 1;
+    this->vdp.tmpAddr[this->vdp.latch++] = value;
+    if (2 == this->vdp.latch) {
+        if (0b01000000 == (this->vdp.tmpAddr[0] & 0b11000000)) {
+            this->updateVdpAddress();
+        } else if (0b10000000 == (this->vdp.tmpAddr[0] & 0b11110000)) {
+            this->updateVdpRegister();
+        }
+    }
+}
+
+inline void TinyMSX::updateVdpAddress()
+{
+    this->vdp.addr = this->vdp.tmpAddr[1];
+    this->vdp.addr <<= 6;
+    this->vdp.addr |= vdp.tmpAddr[0] & 0b00111111;
+}
+
+inline void TinyMSX::updateVdpRegister()
+{
+    this->vdp.reg[this->vdp.tmpAddr[0] & 0b00001111] = this->vdp.tmpAddr[1];
+}
+
+inline void TinyMSX::consumeClock(int clocks)
+{
+    // TODO: consume clock procedure
 }
