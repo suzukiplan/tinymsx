@@ -41,10 +41,18 @@ class TinyMSX {
             unsigned char stat;
             unsigned char latch;
         } vdp;
+        struct ObjectAttributeMemory {
+            unsigned char y;
+            unsigned char x;
+            unsigned char tile;
+            unsigned char attr;
+        } oam[32];
         unsigned char ram[0x2000];
         Z80* cpu;
         TinyMSX(void* rom, size_t romSize);
         ~TinyMSX();
+        void* quickSave(size_t* size);
+        void quickLoad(void* data, size_t size);
 
     private:
         inline unsigned char readMemory(unsigned short addr);
