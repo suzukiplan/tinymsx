@@ -30,6 +30,8 @@
 class TinyMSX {
     private:
         unsigned char pad[2];
+        unsigned char* rom;
+        size_t romSize;
     public:
         struct VideoDisplayProcessor {
             unsigned char ram[0x4000];
@@ -41,8 +43,6 @@ class TinyMSX {
         } vdp;
         unsigned char ram[0x2000];
         Z80* cpu;
-        unsigned char* rom;
-        size_t romSize;
         TinyMSX(void* rom, size_t romSize);
         ~TinyMSX();
 
