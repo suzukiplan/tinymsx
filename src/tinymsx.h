@@ -41,12 +41,6 @@ class TinyMSX {
             unsigned char stat;
             unsigned char latch;
         } vdp;
-        struct ObjectAttributeMemory {
-            unsigned char y;
-            unsigned char x;
-            unsigned char tile;
-            unsigned char attr;
-        } oam[32];
         unsigned char ram[0x2000];
         Z80* cpu;
         TinyMSX(void* rom, size_t romSize);
