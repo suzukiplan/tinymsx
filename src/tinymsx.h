@@ -33,6 +33,7 @@ class TinyMSX {
         unsigned char* rom;
         size_t romSize;
     public:
+        unsigned short display[256 * 192];
         struct VideoDisplayProcessor {
             unsigned char ram[0x4000];
             unsigned char reg[8];
@@ -41,10 +42,15 @@ class TinyMSX {
             unsigned char stat;
             unsigned char latch;
         } vdp;
+        struct InternalRegister {
+            int frameClock;
+            int lineClock;
+        } ir;
         unsigned char ram[0x2000];
         Z80* cpu;
         TinyMSX(void* rom, size_t romSize);
         ~TinyMSX();
+        void reset();
         void* quickSave(size_t* size);
         void quickLoad(void* data, size_t size);
 
@@ -63,4 +69,5 @@ class TinyMSX {
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
         inline int getTransparentPalette() { return vdp.reg[7] & 0b00001111; }
         inline void consumeClock(int clocks);
+        inline void checkUpdateScanline();
 };

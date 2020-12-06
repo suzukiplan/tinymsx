@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
+#include <string.h>
 #include "tinymsx.h"
 
 TinyMSX::TinyMSX(void* rom, size_t romSize)
@@ -32,6 +33,7 @@ TinyMSX::TinyMSX(void* rom, size_t romSize)
     if (this->rom) memcpy(this->rom, rom, romSize);
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
+    reset();
 }
 
 TinyMSX::~TinyMSX()
@@ -40,6 +42,13 @@ TinyMSX::~TinyMSX()
     this->cpu = NULL;
     if (this->rom) free(this->rom);
     this->rom = NULL;
+}
+
+void TinyMSX::reset()
+{
+    if (this->cpu) memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
+    memset(&this->vdp, 0, sizeof(this->vdp));
+    memset(&this->ir, 0, sizeof(this->ir));
 }
 
 inline unsigned char TinyMSX::readMemory(unsigned short addr)
@@ -73,9 +82,11 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
         case 0xC1:
         case 0xDD:
             return this->pad[1];
-        case 0xBE:
+        case 0x98: // MSX
+        case 0xBE: // SG-1000
             return this->vdpReadData();
-        case 0xBF:
+        case 0x99: // MSX
+        case 0xBF: // SG-1000
             return this->vdpReadStatus();
     }
     return 0;
@@ -99,10 +110,12 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
         case 0x7F:
             this->psgWrite(value);
             break;
-        case 0xBE:
+        case 0x98: // MSX
+        case 0xBE: // SG-1000
             this->vdpWriteData(value);
             break;
-        case 0xBF:
+        case 0x99: // MSX
+        case 0xBF: // SG-1000
             this->vdpWriteAddress(value);
             break;
     }
@@ -146,5 +159,13 @@ inline void TinyMSX::updateVdpRegister()
 
 inline void TinyMSX::consumeClock(int clocks)
 {
-    // TODO: consume clock procedure
+    while (clocks--) {
+        this->ir.frameClock++;
+        this->ir.lineClock++;
+        this->checkUpdateScanline();
+    }
+}
+
+inline void TinyMSX::checkUpdateScanline()
+{
 }
