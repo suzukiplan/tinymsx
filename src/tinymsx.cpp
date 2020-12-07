@@ -278,10 +278,12 @@ inline void TinyMSX::drawScanlineMode0(int lineNumber)
 
 inline void TinyMSX::drawScanlineMode2(int lineNumber)
 {
+    drawSprites(lineNumber);
 }
 
 inline void TinyMSX::drawScanlineMode3(int lineNumber)
 {
+    drawSprites(lineNumber);
 }
 
 inline void TinyMSX::drawEmptyScanline(int lineNumber)
