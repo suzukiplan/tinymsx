@@ -188,7 +188,10 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
         case 0x99: // MSX
         case 0xBF: // SG-1000
             return this->vdpReadStatus();
-    }
+         default:
+            printf("unknown input port $%02X\n", port);
+            exit(-1);
+   }
     return 0;
 }
 
@@ -221,6 +224,9 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
         case 0xBF: // SG-1000
             this->vdpWriteAddress(value);
             break;
+        default:
+            printf("unknown out port $%02X <- $%02X\n", port, value);
+            exit(-1);
     }
 }
 
