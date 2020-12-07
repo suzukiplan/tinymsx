@@ -74,8 +74,6 @@ class TinyMSX {
         inline void updateVdpRegister();
         inline void psgWrite(unsigned char value);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
-        inline int getColorTC() { return (vdp.reg[7] & 0b11110000) >> 4; }
-        inline int getColorBD() { return vdp.reg[7] & 0b00001111; }
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
         inline void drawScanline(int lineNumber);

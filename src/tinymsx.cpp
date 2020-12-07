@@ -255,6 +255,7 @@ inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumbe
     int pn = (this->vdp.reg[2] & 0b00001111) << 10;
     int ct = this->vdp.reg[3] << 6;
     int pg = (this->vdp.reg[4] & 0b00000111) << 11;
+    int bd = this->vdp.reg[7] & 0b00001111;
     int pixelLine = lineNumber % 8;
     unsigned char* nam = &this->vdp.ram[pn + lineNumber / 24 * 32];
     for (int i = 0; i < 32; i++) {
@@ -262,7 +263,9 @@ inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumbe
         unsigned char c = this->vdp.ram[ct + nam[i] / 8];
         unsigned char cc[2];
         cc[1] = (c & 0xF0) >> 4;
+        cc[1] = cc[1] ? cc[1] : bd;
         cc[0] = c & 0x0F;
+        cc[0] = cc[0] ? cc[0] : bd;
         int cur = i * 8;
         this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
         this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
@@ -291,6 +294,6 @@ inline void TinyMSX::drawScanlineMode3(unsigned short* lineBuffer, int lineNumbe
 
 inline void TinyMSX::drawScanlineModeX(unsigned short* lineBuffer, int lineNumber)
 {
-    int bd = this->getColorBD();
+    int bd = this->vdp.reg[7] & 0b00001111;
     for (int i = 0; i < 256; i++) lineBuffer[i] = palette[bd];
 }
