@@ -153,29 +153,6 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
     }
 }
 
-#if 0
-全てのレジスタ(裏レジスタ、IX、IY共)をセーブ
-   H.KEYIを呼ぶ
-   ライトペンの処理
-   VDPのステータスレジスタを読む
-   if 垂直帰線割り込み {
-          H.TIMIを呼ぶ
-          割り込みの許可
-          STATFLの設定            /* 【STATFL(0F3E7H)】 */
-          ON SPRITEの処理
-          ON INTERVALの処理
-          JIFFY = JIFFY + 1       /* 【JIFFY(0FC9EH)】 */
-       PLAY文の処理
-          SCNCNT = SCNCNT - 1     /* 【SCNCNT(0F3F6H)】 */
-          if SCNCNT = 0 {
-                 SCNCNT = 2
-                 ON STRIGの処理
-                 キーボードのスキャン
-          }
-   }
-   全てのレジスタ(裏レジスタ、IX、IY共)をリストア
-#endif
-
 inline void TinyMSX::bios(unsigned short addr)
 {
     switch (addr) {
