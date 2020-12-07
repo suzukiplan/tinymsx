@@ -41,6 +41,7 @@ class TinyMSX {
             unsigned short addr;
             unsigned char stat;
             unsigned char latch;
+            unsigned char readBuffer;
         } vdp;
         struct InternalRegister {
             int frameClock;
@@ -64,6 +65,7 @@ class TinyMSX {
         inline void vdpWriteData(unsigned char value);
         inline void vdpWriteAddress(unsigned char value);
         inline void updateVdpAddress();
+        inline void readVideoMemory();
         inline void updateVdpRegister();
         inline void psgWrite(unsigned char value);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }

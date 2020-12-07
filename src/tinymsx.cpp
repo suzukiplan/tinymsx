@@ -94,8 +94,9 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
 
 inline unsigned char TinyMSX::vdpReadData()
 {
-    this->vdp.addr &= 0x3FFF;
-    return this->vdp.ram[this->vdp.addr++];
+    unsigned char result = this->vdp.readBuffer;
+    this->readVideoMemory();
+    return result;
 }
 
 inline unsigned char TinyMSX::vdpReadStatus()
@@ -129,7 +130,8 @@ inline void TinyMSX::psgWrite(unsigned char value)
 inline void TinyMSX::vdpWriteData(unsigned char value)
 {
     this->vdp.addr &= 0x3FFF;
-    this->vdp.ram[this->vdp.addr++] = value;
+    this->vdp.readBuffer = value;
+    this->vdp.ram[this->vdp.addr++] = this->vdp.readBuffer;
 }
 
 inline void TinyMSX::vdpWriteAddress(unsigned char value)
@@ -139,6 +141,9 @@ inline void TinyMSX::vdpWriteAddress(unsigned char value)
     if (2 == this->vdp.latch) {
         if (0b01000000 == (this->vdp.tmpAddr[0] & 0b11000000)) {
             this->updateVdpAddress();
+        } else if (0b00000000 == (this->vdp.tmpAddr[0] & 0b11000000)) {
+            this->updateVdpAddress();
+            this->readVideoMemory();
         } else if (0b10000000 == (this->vdp.tmpAddr[0] & 0b11110000)) {
             this->updateVdpRegister();
         }
@@ -150,6 +155,12 @@ inline void TinyMSX::updateVdpAddress()
     this->vdp.addr = this->vdp.tmpAddr[1];
     this->vdp.addr <<= 6;
     this->vdp.addr |= vdp.tmpAddr[0] & 0b00111111;
+}
+
+inline void TinyMSX::readVideoMemory()
+{
+    this->vdp.addr &= 0x3FFF;
+    this->vdp.readBuffer = this->vdp.ram[this->vdp.addr++];
 }
 
 inline void TinyMSX::updateVdpRegister()
