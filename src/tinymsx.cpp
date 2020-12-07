@@ -188,6 +188,8 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
         case 0x99: // MSX
         case 0xBF: // SG-1000
             return this->vdpReadStatus();
+        case 0xA2: // MSX
+            return this->psgRead();
          default:
             printf("unknown input port $%02X\n", port);
             exit(-1);
@@ -212,8 +214,8 @@ inline unsigned char TinyMSX::vdpReadStatus()
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
     switch (port) {
-        case 0x7E:
-        case 0x7F:
+        case 0x7E: // SG-1000
+        case 0x7F: // SG-1000
             this->psgWrite(value);
             break;
         case 0x98: // MSX
@@ -224,15 +226,31 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
         case 0xBF: // SG-1000
             this->vdpWriteAddress(value);
             break;
+        case 0xA0: // MSX
+            this->psgLatch(value);
+            break;
+        case 0xA1: // MSX
+            this->psgWrite(value);
+            break;
         default:
             printf("unknown out port $%02X <- $%02X\n", port, value);
             exit(-1);
     }
 }
 
+inline void TinyMSX::psgLatch(unsigned char value)
+{
+    // TODO: PSG address latch procedure
+}
+
 inline void TinyMSX::psgWrite(unsigned char value)
 {
     // TODO: PSG write data procedure
+}
+
+inline unsigned char TinyMSX::psgRead()
+{
+    return 0; // TODO: PSG read data procedure
 }
 
 inline void TinyMSX::vdpWriteData(unsigned char value)

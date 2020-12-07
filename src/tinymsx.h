@@ -82,7 +82,9 @@ class TinyMSX {
         inline void updateVdpAddress();
         inline void readVideoMemory();
         inline void updateVdpRegister();
+        inline void psgLatch(unsigned char value);
         inline void psgWrite(unsigned char value);
+        inline unsigned char psgRead();
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
