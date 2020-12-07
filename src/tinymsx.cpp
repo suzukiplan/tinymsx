@@ -234,8 +234,7 @@ inline void TinyMSX::drawScanline(int lineNumber)
 {
     if (lineNumber < 192) {
         unsigned short lineBuffer[256];
-        int mode = this->getVideoMode();
-        switch (mode) {
+        switch (this->getVideoMode()) {
             case 0: this->drawScanlineMode0(lineBuffer, lineNumber); break;
             case 1: this->drawScanlineModeX(lineBuffer, lineNumber); break;
             case 2: this->drawScanlineMode2(lineBuffer, lineNumber); break;
@@ -252,7 +251,35 @@ inline void TinyMSX::drawScanline(int lineNumber)
 
 inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumber)
 {
-}
+    // draw BG
+    int pn = (this->vdp.reg[2] & 0b00001111) << 10;
+    int ct = this->vdp.reg[3] << 6;
+    int pg = (this->vdp.reg[4] & 0b00000111) << 11;
+    int pixelLine = lineNumber % 8;
+    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 24 * 32];
+    for (int i = 0; i < 32; i++) {
+        unsigned char ptn = this->vdp.ram[pg + nam[i] * 8 + pixelLine];
+        unsigned char c = this->vdp.ram[ct + nam[i] / 8];
+        unsigned char cc[2];
+        cc[1] = (c & 0xF0) >> 4;
+        cc[0] = c & 0x0F;
+        int cur = i * 8;
+        this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
+        this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
+        this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
+    }
+
+    // draw Sprite
+    bool si = this->vdp.reg[1] & 0b00000010 ? true : false;
+    bool mag = this->vdp.reg[1] & 0b00000001 ? true : false;
+    int sa = (this->vdp.reg[5] & 0b01111111) << 7;
+    int sg = (this->vdp.reg[6] & 0b00000111) << 11;
+} 
 
 inline void TinyMSX::drawScanlineMode2(unsigned short* lineBuffer, int lineNumber)
 {
