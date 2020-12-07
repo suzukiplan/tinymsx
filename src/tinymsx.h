@@ -61,6 +61,7 @@ class TinyMSX {
         TinyMSX(int type, void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
         void reset();
+        void tick(unsigned char pad1, unsigned char pad2);
         void* quickSave(size_t* size);
         void quickLoad(void* data, size_t size);
 
@@ -79,6 +80,7 @@ class TinyMSX {
         inline void updateVdpAddress();
         inline void readVideoMemory();
         inline void updateVdpRegister();
+        inline void bios(unsigned short addr);
         inline void psgWrite(unsigned char value);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
         inline void consumeClock(int clocks);

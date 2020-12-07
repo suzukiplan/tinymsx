@@ -19,5 +19,10 @@ int main(int argc, char* argv[])
     fread(rom, 1, romSize, fp);
     fclose(fp);
     TinyMSX msx(TINY_MSX_TYPE_MSX1, rom, romSize, TINY_MSX_COLOR_MODE_RGB555);
+    msx.cpu->setDebugMessage([](void* arg, const char* msg) {
+        TinyMSX* msx = (TinyMSX*)arg;
+        printf("[%04X (%3d)] %s\n", msx->cpu->reg.PC, msx->ir.lineNumber, msg);
+    });
+    msx.tick(0, 0);
     return 0;
 }

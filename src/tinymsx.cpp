@@ -98,13 +98,22 @@ void TinyMSX::reset()
     this->cpu->reg.PC = this->getInitAddr();
 }
 
+void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
+{
+    this->pad[0] = pad1;
+    this->pad[1] = pad2;
+    if (this->cpu) {
+        this->cpu->execute(0x7FFFFFFF);
+    }
+}
+
 unsigned short TinyMSX::getInitAddr()
 {
     unsigned short result = 0;
     if (this->isMSX1() && 4 <= this->romSize) {
         result = this->rom[3];
         result <<= 8;
-        result = this->rom[2];
+        result |= this->rom[2];
     }
     return result;
 }
@@ -126,9 +135,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
     } else if (this->isMSX1()) {
         if (addr < 0x4000) {
             if (0 == this->cpu->reg.PC % 4) {
-                // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
-                printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
-                exit(-1);
+                this->bios(this->cpu->reg.PC);
             }
             return addr & 1 ? 0b01001101 : 0b11101101; // always return opcode RETI
         } else if (addr < 0xC000) {
@@ -144,6 +151,13 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
     } else {
         return 0; // unknown system
     }
+}
+
+inline void TinyMSX::bios(unsigned short addr)
+{
+    // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
+    printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
+    exit(-1);
 }
 
 inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
@@ -298,6 +312,8 @@ inline void TinyMSX::drawScanline(int lineNumber)
             this->vdp.stat |= 0x80;
             this->cpu->generateIRQ(0);
         }
+    } else if (261 == lineNumber) {
+        this->cpu->requestBreak();
     }
 }
 
