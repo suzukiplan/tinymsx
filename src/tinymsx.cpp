@@ -141,6 +141,8 @@ inline unsigned char TinyMSX::vdpReadData()
 
 inline unsigned char TinyMSX::vdpReadStatus()
 {
+    unsigned char result = this->vdp.stat;
+    this->vdp.stat &= 0b01011111;
     return this->vdp.stat;
 }
 
@@ -223,7 +225,7 @@ inline void TinyMSX::checkUpdateScanline()
         case 224:
             this->ir.lineClock = 0;
             this->drawScanline(this->ir.lineNumber++);
-            this->ir.lineNumber &= 0xFF;
+            this->ir.lineNumber %= 262;
             break;
     }
 }
@@ -241,6 +243,10 @@ inline void TinyMSX::drawScanline(int lineNumber)
             default: this->drawScanlineModeX(lineBuffer, lineNumber);
         }
         memcpy(&this->display[256 * lineNumber], lineBuffer, sizeof(lineBuffer));
+        if (191 == lineNumber) {
+            this->vdp.stat |= 0x80;
+            this->cpu->generateIRQ(0);
+        }
     }
 }
 
