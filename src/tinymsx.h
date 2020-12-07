@@ -77,8 +77,9 @@ class TinyMSX {
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
         inline void drawScanline(int lineNumber);
-        inline void drawScanlineMode0(unsigned short* lineBuffer, int lineNumber);
-        inline void drawScanlineMode2(unsigned short* lineBuffer, int lineNumber);
-        inline void drawScanlineMode3(unsigned short* lineBuffer, int lineNumber);
-        inline void drawScanlineModeX(unsigned short* lineBuffer, int lineNumber);
+        inline void drawScanlineMode0(int lineNumber);
+        inline void drawScanlineMode2(int lineNumber);
+        inline void drawScanlineMode3(int lineNumber);
+        inline void drawEmptyScanline(int lineNumber);
+        inline void drawSprites(int lineNumber);
 };

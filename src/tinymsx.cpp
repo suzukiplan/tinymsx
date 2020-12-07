@@ -186,7 +186,7 @@ inline void TinyMSX::vdpWriteAddress(unsigned char value)
         } else if (0b00000000 == (this->vdp.tmpAddr[0] & 0b11000000)) {
             this->updateVdpAddress();
             this->readVideoMemory();
-        } else if (0b10000000 == (this->vdp.tmpAddr[0] & 0b11110000)) {
+        } else if (0b10000000 == (this->vdp.tmpAddr[0] & 0b10000000)) {
             this->updateVdpRegister();
         }
     }
@@ -233,15 +233,13 @@ inline void TinyMSX::checkUpdateScanline()
 inline void TinyMSX::drawScanline(int lineNumber)
 {
     if (lineNumber < 192) {
-        unsigned short lineBuffer[256];
         switch (this->getVideoMode()) {
-            case 0: this->drawScanlineMode0(lineBuffer, lineNumber); break;
-            case 1: this->drawScanlineModeX(lineBuffer, lineNumber); break;
-            case 2: this->drawScanlineMode2(lineBuffer, lineNumber); break;
-            case 4: this->drawScanlineMode3(lineBuffer, lineNumber); break;
-            default: this->drawScanlineModeX(lineBuffer, lineNumber);
+            case 0: this->drawScanlineMode0(lineNumber); break;
+            case 1: this->drawEmptyScanline(lineNumber); break;
+            case 2: this->drawScanlineMode2(lineNumber); break;
+            case 4: this->drawScanlineMode3(lineNumber); break;
+            default: this->drawEmptyScanline(lineNumber);
         }
-        memcpy(&this->display[256 * lineNumber], lineBuffer, sizeof(lineBuffer));
         if (191 == lineNumber) {
             this->vdp.stat |= 0x80;
             this->cpu->generateIRQ(0);
@@ -249,9 +247,8 @@ inline void TinyMSX::drawScanline(int lineNumber)
     }
 }
 
-inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumber)
+inline void TinyMSX::drawScanlineMode0(int lineNumber)
 {
-    // draw BG
     int pn = (this->vdp.reg[2] & 0b00001111) << 10;
     int ct = this->vdp.reg[3] << 6;
     int pg = (this->vdp.reg[4] & 0b00000111) << 11;
@@ -276,24 +273,123 @@ inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumbe
         this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
         this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
     }
+    drawSprites(lineNumber);
+} 
 
-    // draw Sprite
+inline void TinyMSX::drawScanlineMode2(int lineNumber)
+{
+}
+
+inline void TinyMSX::drawScanlineMode3(int lineNumber)
+{
+}
+
+inline void TinyMSX::drawEmptyScanline(int lineNumber)
+{
+    int bd = this->vdp.reg[7] & 0b00001111;
+    int cur = lineNumber * 256;
+    for (int i = 0; i < 256; i++) this->display[cur++] = palette[bd];
+}
+
+inline void TinyMSX::drawSprites(int lineNumber)
+{
+    static const unsigned char bit[8] = {
+        0b10000000,
+        0b01000000,
+        0b00100000,
+        0b00010000,
+        0b00001000,
+        0b00000100,
+        0b00000010,
+        0b00000001
+    };
     bool si = this->vdp.reg[1] & 0b00000010 ? true : false;
     bool mag = this->vdp.reg[1] & 0b00000001 ? true : false;
     int sa = (this->vdp.reg[5] & 0b01111111) << 7;
     int sg = (this->vdp.reg[6] & 0b00000111) << 11;
-} 
-
-inline void TinyMSX::drawScanlineMode2(unsigned short* lineBuffer, int lineNumber)
-{
-}
-
-inline void TinyMSX::drawScanlineMode3(unsigned short* lineBuffer, int lineNumber)
-{
-}
-
-inline void TinyMSX::drawScanlineModeX(unsigned short* lineBuffer, int lineNumber)
-{
-    int bd = this->vdp.reg[7] & 0b00001111;
-    for (int i = 0; i < 256; i++) lineBuffer[i] = palette[bd];
+    int sn = 0;
+    for (int i = 0; i < 32; i++) {
+        int cur = sa + i * 4;
+        unsigned char y = this->vdp.ram[cur++];
+        if (208 == y) break;
+        unsigned char x = this->vdp.ram[cur++];
+        unsigned char ptn = this->vdp.ram[cur++];
+        unsigned char col = this->vdp.ram[cur++];
+        if (col & 0x80) x -= 32;
+        col &= 0b00001111;
+        y--;
+        if (mag) {
+            if (si) {
+                // 16x16 x 2
+                if (y <= lineNumber && lineNumber < y + 32) {
+                    sn++;
+                    if (5 <= sn) {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= 0b01000000 | i;
+                        break;
+                    }
+                    cur = sg + (ptn & 252) * 8 + lineNumber % 8;
+                    int dcur = y * 256;
+                    for (int j = 0; j < 16; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j / 2]) this->display[dcur + x] = palette[col];
+                    }
+                    cur += 8;
+                    for (int j = 0; j < 16; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j / 2]) this->display[dcur + x] = palette[col];
+                    }
+                }
+            } else {
+                // 8x8 x 2
+                if (y <= lineNumber && lineNumber < y + 16) {
+                    sn++;
+                    if (5 <= sn) {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= 0b01000000 | i;
+                        break;
+                    }
+                    cur = sg + ptn * 8 + lineNumber % 8;
+                    int dcur = y * 256;
+                    for (int j = 0; j < 16; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j / 2]) this->display[dcur + x] = palette[col];
+                    }
+                }
+            }
+        } else {
+            if (si) {
+                // 16x16 x 1
+                if (y <= lineNumber && lineNumber < y + 16) {
+                    sn++;
+                    if (5 <= sn) {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= 0b01000000 | i;
+                        break;
+                    }
+                    cur = sg + (ptn & 252) * 8 + lineNumber % 8;
+                    int dcur = y * 256;
+                    for (int j = 0; j < 8; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = palette[col];
+                    }
+                    cur += 8;
+                    for (int j = 0; j < 8; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = palette[col];
+                    }
+                }
+            } else {
+                // 8x8 x 1
+                if (y <= lineNumber && lineNumber < y + 8) {
+                    sn++;
+                    if (5 <= sn) {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= 0b01000000 | i;
+                        break;
+                    }
+                    cur = sg + ptn * 8 + lineNumber % 8;
+                    int dcur = y * 256;
+                    for (int j = 0; j < 8; j++, x++) {
+                        if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = palette[col];
+                    }
+                }
+            }
+        }
+    }
 }
