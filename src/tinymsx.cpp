@@ -153,11 +153,59 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
     }
 }
 
+#if 0
+全てのレジスタ(裏レジスタ、IX、IY共)をセーブ
+   H.KEYIを呼ぶ
+   ライトペンの処理
+   VDPのステータスレジスタを読む
+   if 垂直帰線割り込み {
+          H.TIMIを呼ぶ
+          割り込みの許可
+          STATFLの設定            /* 【STATFL(0F3E7H)】 */
+          ON SPRITEの処理
+          ON INTERVALの処理
+          JIFFY = JIFFY + 1       /* 【JIFFY(0FC9EH)】 */
+       PLAY文の処理
+          SCNCNT = SCNCNT - 1     /* 【SCNCNT(0F3F6H)】 */
+          if SCNCNT = 0 {
+                 SCNCNT = 2
+                 ON STRIGの処理
+                 キーボードのスキャン
+          }
+   }
+   全てのレジスタ(裏レジスタ、IX、IY共)をリストア
+#endif
+
 inline void TinyMSX::bios(unsigned short addr)
 {
-    // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
-    printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
-    exit(-1);
+    switch (addr) {
+        case 0x0038: {
+            // todo: call H.KEYI
+            // todo: light pen
+            unsigned char vdpStatus = this->vdpReadStatus(); // read VDP status
+            if (vdpStatus & 0x80) {
+                // todo: H.TIMI
+                // todo: enable interrupt
+                this->writeMemory(0xF3E7, 0xFF); // set STATFL
+                // todo: ON SPRITE procedure
+                // todo: ON INTERVAL procedure
+                this->writeMemory(0xFC9E, this->readMemory(0xFC9E) + 1); // JIFFY++
+                unsigned char scncnt = this->readMemory(0xF3F6) - 1;
+                this->writeMemory(0xF3F6, scncnt);
+                // todo: PLAY procedure
+                if (0 == scncnt) {
+                    this->writeMemory(0xF3F6, 2);
+                    // todo: ON STRIG procedure
+                    // todo: keyboard scan
+                }
+            }
+            break;
+        }
+        default:
+            // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
+            printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
+            exit(-1);
+    }
 }
 
 inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
