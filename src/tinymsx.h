@@ -27,11 +27,15 @@
 #include <stdio.h>
 #include "z80.hpp"
 
+#define TINY_MSX_TYPE_SG1000 0
+#define TINY_MSX_TYPE_MSX1 1
+
 #define TINY_MSX_COLOR_MODE_RGB555 0
 #define TINY_MSX_COLOR_MODE_RGB565 1
 
 class TinyMSX {
     private:
+        int type;
         unsigned char pad[2];
         unsigned char* rom;
         size_t romSize;
@@ -54,13 +58,16 @@ class TinyMSX {
         } ir;
         unsigned char ram[0x2000];
         Z80* cpu;
-        TinyMSX(void* rom, size_t romSize, int colorMode);
+        TinyMSX(int type, void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
         void reset();
         void* quickSave(size_t* size);
         void quickLoad(void* data, size_t size);
 
     private:
+        inline bool isSG1000() { return this->type == TINY_MSX_TYPE_SG1000; }
+        inline bool isMSX1() { return this->type == TINY_MSX_TYPE_MSX1; }
+        inline unsigned short getInitAddr();
         inline unsigned char readMemory(unsigned short addr);
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);

@@ -27,8 +27,9 @@
 #include <string.h>
 #include "tinymsx.h"
 
-TinyMSX::TinyMSX(void* rom, size_t romSize, int colorMode)
+TinyMSX::TinyMSX(int type, void* rom, size_t romSize, int colorMode)
 {
+    this->type = type;
     switch (colorMode) {
         case TINY_MSX_COLOR_MODE_RGB555:
             this->palette[0x0] = 0b0000000000000000;
@@ -70,7 +71,12 @@ TinyMSX::TinyMSX(void* rom, size_t romSize, int colorMode)
             memset(this->palette, 0, sizeof(this->palette));
     }
     this->rom = (unsigned char*)malloc(romSize);
-    if (this->rom) memcpy(this->rom, rom, romSize);
+    if (this->rom) {
+        memcpy(this->rom, rom, romSize);
+        this->romSize = romSize;
+    } else {
+        this->romSize = 0;
+    }
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
     reset();
@@ -89,27 +95,75 @@ void TinyMSX::reset()
     if (this->cpu) memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     memset(&this->vdp, 0, sizeof(this->vdp));
     memset(&this->ir, 0, sizeof(this->ir));
+    this->cpu->reg.PC = this->getInitAddr();
+}
+
+unsigned short TinyMSX::getInitAddr()
+{
+    unsigned short result = 0;
+    if (this->isMSX1() && 4 <= this->romSize) {
+        result = this->rom[3];
+        result <<= 8;
+        result = this->rom[2];
+    }
+    return result;
 }
 
 inline unsigned char TinyMSX::readMemory(unsigned short addr)
 {
-    if (addr < 0x8000) {
-        return this->rom[addr];
-    } else if (addr < 0xA000) {
-        return 0; // unused in SG-1000
+    if (this->isSG1000()) {
+        if (addr < 0x8000) {
+            if (romSize <= addr) {
+                return 0;
+            } else {
+                return this->rom[addr];
+            }
+        } else if (addr < 0xA000) {
+            return 0; // unused in SG-1000
+        } else {
+            return this->ram[addr & 0x1FFF];
+        }
+    } else if (this->isMSX1()) {
+        if (addr < 0x4000) {
+            if (0 == this->cpu->reg.PC % 4) {
+                // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
+                printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
+                exit(-1);
+            }
+            return addr & 1 ? 0b01001101 : 0b11101101; // always return opcode RETI
+        } else if (addr < 0xC000) {
+            addr -= 0x4000;
+            if (romSize <= addr) {
+                return 0;
+            } else {
+                return this->rom[addr];
+            }
+        } else {
+            return this->ram[addr & 0x1FFF];
+        }
     } else {
-        return this->ram[addr & 0x1FFF];
+        return 0; // unknown system
     }
 }
 
 inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
 {
-    if (addr < 0x8000) {
-        return;
-    } else if (addr < 0xA000) {
-        return;
-    } else {
-        this->ram[addr & 0x1FFF] = value;
+    if (this->isSG1000()) {
+        if (addr < 0x8000) {
+            return;
+        } else if (addr < 0xA000) {
+            return;
+        } else {
+            this->ram[addr & 0x1FFF] = value;
+        }
+    } else if (this->isMSX1()) {
+        if (addr < 0x4000) {
+            return;
+        } else if (addr < 0xC000) {
+            return;
+        } else {
+            this->ram[addr & 0x1FFF] = value;
+        }
     }
 }
 
@@ -271,7 +325,7 @@ inline void TinyMSX::drawScanlineMode0(int lineNumber)
         this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
         this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
         this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-        this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
+        this->display[cur] = this->palette[cc[ptn & 0b00000001]];
     }
     drawSprites(lineNumber);
 } 
