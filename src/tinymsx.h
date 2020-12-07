@@ -35,6 +35,7 @@
 
 class TinyMSX {
     private:
+        unsigned char bios[0x4000];
         int type;
         unsigned char pad[2];
         unsigned char* rom;
@@ -56,7 +57,7 @@ class TinyMSX {
             int lineClock;
             int lineNumber;
         } ir;
-        unsigned char ram[0x2000];
+        unsigned char ram[0x4000];
         Z80* cpu;
         TinyMSX(int type, void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
@@ -66,6 +67,7 @@ class TinyMSX {
         void quickLoad(void* data, size_t size);
 
     private:
+        inline void initBIOS();
         inline bool isSG1000() { return this->type == TINY_MSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINY_MSX_TYPE_MSX1; }
         inline unsigned short getInitAddr();
@@ -80,7 +82,6 @@ class TinyMSX {
         inline void updateVdpAddress();
         inline void readVideoMemory();
         inline void updateVdpRegister();
-        inline void bios(unsigned short addr);
         inline void psgWrite(unsigned char value);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
         inline void consumeClock(int clocks);

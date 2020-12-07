@@ -70,6 +70,7 @@ TinyMSX::TinyMSX(int type, void* rom, size_t romSize, int colorMode)
         default:
             memset(this->palette, 0, sizeof(this->palette));
     }
+    this->initBIOS();
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) {
         memcpy(this->rom, rom, romSize);
@@ -94,12 +95,13 @@ void TinyMSX::reset()
 {
     if (this->cpu) memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     memset(&this->vdp, 0, sizeof(this->vdp));
-    memset(&this->ir, 0, sizeof(this->ir));
+    memset(this->ram, this->isMSX1() ? 0b11001001 : 0, sizeof(this->ram));
     this->cpu->reg.PC = this->getInitAddr();
 }
 
 void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
 {
+    memset(&this->ir, 0, sizeof(this->ir));
     this->pad[0] = pad1;
     this->pad[1] = pad2;
     if (this->cpu) {
@@ -134,10 +136,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
         }
     } else if (this->isMSX1()) {
         if (addr < 0x4000) {
-            if (0 == this->cpu->reg.PC % 4) {
-                this->bios(this->cpu->reg.PC);
-            }
-            return addr & 1 ? 0b01001101 : 0b11101101; // always return opcode RETI
+            return this->bios[addr];
         } else if (addr < 0xC000) {
             addr -= 0x4000;
             if (romSize <= addr) {
@@ -146,42 +145,10 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
                 return this->rom[addr];
             }
         } else {
-            return this->ram[addr & 0x1FFF];
+            return this->ram[addr & 0x3FFF];
         }
     } else {
         return 0; // unknown system
-    }
-}
-
-inline void TinyMSX::bios(unsigned short addr)
-{
-    switch (addr) {
-        case 0x0038: {
-            // todo: call H.KEYI
-            // todo: light pen
-            unsigned char vdpStatus = this->vdpReadStatus(); // read VDP status
-            if (vdpStatus & 0x80) {
-                // todo: H.TIMI
-                // todo: enable interrupt
-                this->writeMemory(0xF3E7, 0xFF); // set STATFL
-                // todo: ON SPRITE procedure
-                // todo: ON INTERVAL procedure
-                this->writeMemory(0xFC9E, this->readMemory(0xFC9E) + 1); // JIFFY++
-                unsigned char scncnt = this->readMemory(0xF3F6) - 1;
-                this->writeMemory(0xF3F6, scncnt);
-                // todo: PLAY procedure
-                if (0 == scncnt) {
-                    this->writeMemory(0xF3F6, 2);
-                    // todo: ON STRIG procedure
-                    // todo: keyboard scan
-                }
-            }
-            break;
-        }
-        default:
-            // todo: PCが4の倍数値の時は対応するBIOSコールを実行する
-            printf("unimplemented BIOS call ($%04X)\n", this->cpu->reg.PC);
-            exit(-1);
     }
 }
 
@@ -201,7 +168,7 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         } else if (addr < 0xC000) {
             return;
         } else {
-            this->ram[addr & 0x1FFF] = value;
+            this->ram[addr & 0x3FFF] = value;
         }
     }
 }
@@ -489,4 +456,17 @@ inline void TinyMSX::drawSprites(int lineNumber)
             }
         }
     }
+}
+
+inline void TinyMSX::initBIOS()
+{
+    unsigned short addr;
+    memset(this->bios, 0, sizeof(this->bios));
+
+    // $0038: JP $FD9A (H.KEYI)
+    // In external cartridges the vertical synchronous interrupt should always be H.KEYI hook.
+    addr = 0x0038;
+    this->bios[addr++] = 0b11000011;
+    this->bios[addr++] = 0x9A;
+    this->bios[addr++] = 0xFD;
 }
