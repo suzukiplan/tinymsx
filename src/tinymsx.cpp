@@ -27,8 +27,48 @@
 #include <string.h>
 #include "tinymsx.h"
 
-TinyMSX::TinyMSX(void* rom, size_t romSize)
+TinyMSX::TinyMSX(void* rom, size_t romSize, int colorMode)
 {
+    switch (colorMode) {
+        case TINY_MSX_COLOR_MODE_RGB555:
+            this->palette[0x0] = 0b0000000000000000;
+            this->palette[0x1] = 0b0000000000000000;
+            this->palette[0x2] = 0b0001001100101000;
+            this->palette[0x3] = 0b0010111101101111;
+            this->palette[0x4] = 0b0010100101011101;
+            this->palette[0x5] = 0b0011110111011111;
+            this->palette[0x6] = 0b0110100101001001;
+            this->palette[0x7] = 0b0010001110111110;
+            this->palette[0x8] = 0b0111110101001010;
+            this->palette[0x9] = 0b0111110111101111;
+            this->palette[0xA] = 0b0110101100001010;
+            this->palette[0xB] = 0b0111001100110000;
+            this->palette[0xC] = 0b0001001011000111;
+            this->palette[0xD] = 0b0110010101110111;
+            this->palette[0xE] = 0b0110011100111001;
+            this->palette[0xF] = 0b0111111111111111;
+            break;
+        case TINY_MSX_COLOR_MODE_RGB565:
+            this->palette[0x0] = 0b0000000000000000;
+            this->palette[0x1] = 0b0000000000000000;
+            this->palette[0x2] = 0b0010011001001000;
+            this->palette[0x3] = 0b0101111011101111;
+            this->palette[0x4] = 0b0101001010111101;
+            this->palette[0x5] = 0b0111101110111111;
+            this->palette[0x6] = 0b1101001010001001;
+            this->palette[0x7] = 0b0100011101011110;
+            this->palette[0x8] = 0b1111101010101010;
+            this->palette[0x9] = 0b1111101111001111;
+            this->palette[0xA] = 0b1101011000001010;
+            this->palette[0xB] = 0b1110011001110000;
+            this->palette[0xC] = 0b0010010110000111;
+            this->palette[0xD] = 0b1100101011010111;
+            this->palette[0xE] = 0b1100111001111001;
+            this->palette[0xF] = 0b1111111111111111;
+            break;
+        default:
+            memset(this->palette, 0, sizeof(this->palette));
+    }
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) memcpy(this->rom, rom, romSize);
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
@@ -179,4 +219,45 @@ inline void TinyMSX::consumeClock(int clocks)
 
 inline void TinyMSX::checkUpdateScanline()
 {
+    switch (this->ir.lineClock) {
+        case 224:
+            this->ir.lineClock = 0;
+            this->drawScanline(this->ir.lineNumber++);
+            this->ir.lineNumber &= 0xFF;
+            break;
+    }
+}
+
+inline void TinyMSX::drawScanline(int lineNumber)
+{
+    if (lineNumber < 192) {
+        unsigned short lineBuffer[256];
+        int mode = this->getVideoMode();
+        switch (mode) {
+            case 0: this->drawScanlineMode0(lineBuffer, lineNumber); break;
+            case 1: this->drawScanlineModeX(lineBuffer, lineNumber); break;
+            case 2: this->drawScanlineMode2(lineBuffer, lineNumber); break;
+            case 4: this->drawScanlineMode3(lineBuffer, lineNumber); break;
+            default: this->drawScanlineModeX(lineBuffer, lineNumber);
+        }
+        memcpy(&this->display[256 * lineNumber], lineBuffer, sizeof(lineBuffer));
+    }
+}
+
+inline void TinyMSX::drawScanlineMode0(unsigned short* lineBuffer, int lineNumber)
+{
+}
+
+inline void TinyMSX::drawScanlineMode2(unsigned short* lineBuffer, int lineNumber)
+{
+}
+
+inline void TinyMSX::drawScanlineMode3(unsigned short* lineBuffer, int lineNumber)
+{
+}
+
+inline void TinyMSX::drawScanlineModeX(unsigned short* lineBuffer, int lineNumber)
+{
+    int bd = this->getColorBD();
+    for (int i = 0; i < 256; i++) lineBuffer[i] = palette[bd];
 }

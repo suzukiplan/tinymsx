@@ -27,6 +27,9 @@
 #include <stdio.h>
 #include "z80.hpp"
 
+#define TINY_MSX_COLOR_MODE_RGB555 0
+#define TINY_MSX_COLOR_MODE_RGB565 1
+
 class TinyMSX {
     private:
         unsigned char pad[2];
@@ -34,6 +37,7 @@ class TinyMSX {
         size_t romSize;
     public:
         unsigned short display[256 * 192];
+        unsigned short palette[16];
         struct VideoDisplayProcessor {
             unsigned char ram[0x4000];
             unsigned char reg[8];
@@ -46,10 +50,11 @@ class TinyMSX {
         struct InternalRegister {
             int frameClock;
             int lineClock;
+            int lineNumber;
         } ir;
         unsigned char ram[0x2000];
         Z80* cpu;
-        TinyMSX(void* rom, size_t romSize);
+        TinyMSX(void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
         void reset();
         void* quickSave(size_t* size);
@@ -69,7 +74,13 @@ class TinyMSX {
         inline void updateVdpRegister();
         inline void psgWrite(unsigned char value);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
-        inline int getTransparentPalette() { return vdp.reg[7] & 0b00001111; }
+        inline int getColorTC() { return (vdp.reg[7] & 0b11110000) >> 4; }
+        inline int getColorBD() { return vdp.reg[7] & 0b00001111; }
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
+        inline void drawScanline(int lineNumber);
+        inline void drawScanlineMode0(unsigned short* lineBuffer, int lineNumber);
+        inline void drawScanlineMode2(unsigned short* lineBuffer, int lineNumber);
+        inline void drawScanlineMode3(unsigned short* lineBuffer, int lineNumber);
+        inline void drawScanlineModeX(unsigned short* lineBuffer, int lineNumber);
 };
