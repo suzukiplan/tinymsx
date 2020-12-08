@@ -268,6 +268,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->vdpWriteAddress(value);
                 break;
             case 0xA0:
+            case 0xA1:
                 this->psgWrite(value);
                 break;
             case 0xA8:
