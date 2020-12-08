@@ -97,7 +97,7 @@ void TinyMSX::reset()
     memset(&this->vdp, 0, sizeof(this->vdp));
     memset(&this->i8255, 0, sizeof(this->i8255));
     this->i8255.reg[3] = 0x9B;
-    memset(this->ram, this->isMSX1() ? 0b11001001 : 0, sizeof(this->ram));
+    memset(this->ram, 0xFF, sizeof(this->ram));
     this->cpu->reg.PC = this->getInitAddr();
 }
 
