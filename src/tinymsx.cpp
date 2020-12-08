@@ -198,60 +198,88 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
 
 inline unsigned char TinyMSX::inPort(unsigned char port)
 {
-    switch (port) {
-        case 0xC0:
-        case 0xDC:
-            return this->pad[0];
-        case 0xC1:
-        case 0xDD:
-            return this->pad[1];
-        case 0x98: // MSX
-        case 0xBE: // SG-1000
-            return this->vdpReadData();
-        case 0x99: // MSX
-        case 0xBF: // SG-1000
-            return this->vdpReadStatus();
-        case 0xA2: // MSX
-            return this->psgRead();
-        case 0xA8: // MSX
-        case 0xA9: // MSX
-        case 0xAA: // MSX
-        case 0xAB: // MSX
-            return this->i8255Read(port - 0xA8);
-        default:
-            printf("unknown input port $%02X\n", port);
-            exit(-1);
-   }
+    if (this->isSG1000()) {
+        switch (port) {
+            case 0xC0:
+            case 0xDC:
+                return this->pad[0];
+            case 0xC1:
+            case 0xDD:
+                return this->pad[1];
+            case 0xBE:
+                return this->vdpReadData();
+            case 0xBF:
+                return this->vdpReadStatus();
+            default:
+                printf("unknown input port $%02X\n", port);
+                exit(-1);
+        }
+    } else if (this->isMSX1()) {
+        switch (port) {
+            case 0xC0:
+            case 0xDC:
+                return this->pad[0];
+            case 0xC1:
+            case 0xDD:
+                return this->pad[1];
+            case 0x98:
+                return this->vdpReadData();
+            case 0x99:
+                return this->vdpReadStatus();
+            case 0xA2:
+                return this->psgRead();
+            case 0xA8:
+            case 0xA9:
+            case 0xAA:
+            case 0xAB:
+                return this->i8255Read(port - 0xA8);
+            default:
+                printf("unknown input port $%02X\n", port);
+                exit(-1);
+        }
+    }
     return 0;
 }
 
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
-    switch (port) {
-        case 0x7E: // SG-1000
-        case 0x7F: // SG-1000
-            this->psgWrite(value);
-            break;
-        case 0x98: // MSX
-        case 0xBE: // SG-1000
-            this->vdpWriteData(value);
-            break;
-        case 0x99: // MSX
-        case 0xBF: // SG-1000
-            this->vdpWriteAddress(value);
-            break;
-        case 0xA0: // MSX
-            this->psgWrite(value);
-            break;
-        case 0xA8: // MSX
-        case 0xA9: // MSX
-        case 0xAA: // MSX
-        case 0xAB: // MSX
-            this->i8255Write(port - 0xA8, value);
-            break;
-        default:
-            printf("unknown out port $%02X <- $%02X\n", port, value);
-            exit(-1);
+    if (this->isSG1000()) {
+        switch (port) {
+            case 0x7E:
+            case 0x7F:
+                this->psgWrite(value);
+                break;
+            case 0xBE:
+                this->vdpWriteData(value);
+                break;
+            case 0xBF:
+                this->vdpWriteAddress(value);
+                break;
+            default:
+                printf("unknown out port $%02X <- $%02X\n", port, value);
+                exit(-1);
+        }
+    } else if (this->isMSX1()) {
+        switch (port) {
+            case 0x98:
+                this->vdpWriteData(value);
+                break;
+            case 0x99:
+                this->vdpWriteAddress(value);
+                break;
+            case 0xA0:
+                this->psgWrite(value);
+                break;
+            case 0xA8:
+            case 0xA9:
+            case 0xAA:
+            case 0xAB:
+                this->i8255Write(port - 0xA8, value);
+                break;
+            default:
+                printf("unknown out port $%02X <- $%02X\n", port, value);
+                exit(-1);
+        }
     }
 }
 
