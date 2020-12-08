@@ -27,6 +27,10 @@
 #include <string.h>
 #include "tinymsx.h"
 
+#define CPU_RATE 3579545
+#define SAMPLE_RATE 44100.0
+#define PSG_SHIFT 16
+
 TinyMSX::TinyMSX(int type, void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
@@ -99,6 +103,23 @@ void TinyMSX::reset()
     this->i8255.reg[3] = 0x9B;
     memset(this->ram, 0xFF, sizeof(this->ram));
     this->cpu->reg.PC = this->getInitAddr();
+    this->psgLevels[0] = 255;
+    this->psgLevels[1] = 180;
+    this->psgLevels[2] = 127;
+    this->psgLevels[3] = 90;
+    this->psgLevels[4] = 63;
+    this->psgLevels[5] = 44;
+    this->psgLevels[6] = 31;
+    this->psgLevels[7] = 22;
+    this->psgLevels[8] = 15;
+    this->psgLevels[9] = 10;
+    this->psgLevels[10] = 7;
+    this->psgLevels[11] = 5;
+    this->psgLevels[12] = 3;
+    this->psgLevels[13] = 2;
+    this->psgLevels[14] = 1;
+    this->psgLevels[15] = 0;
+    this->psgCycle = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
 }
 
 void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
@@ -220,9 +241,6 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             this->vdpWriteAddress(value);
             break;
         case 0xA0: // MSX
-            this->psgLatch(value);
-            break;
-        case 0xA1: // MSX
             this->psgWrite(value);
             break;
         case 0xA8: // MSX
@@ -237,19 +255,73 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
     }
 }
 
-inline void TinyMSX::psgLatch(unsigned char value)
-{
-    // TODO: PSG address latch procedure
-}
-
 inline void TinyMSX::psgWrite(unsigned char value)
 {
-    // TODO: PSG write data procedure
+    if (value & 0x80) {
+        this->psg.i = (value >> 4) & 7;
+        this->psg.r[this->psg.i] = value & 0x0f;
+    } else {
+        this->psg.r[this->psg.i] |= (value & 0x3f) << 4;
+    }
+    switch (this->psg.r[6] & 3) {
+        case 0: this->psg.np = 1; break;
+        case 1: this->psg.np = 2; break;
+        case 2: this->psg.np = 4; break;
+        case 3: this->psg.np = this->psg.r[4]; break;
+    }
+    this->psg.nx = (this->psg.r[6] & 0x04) ? 0x12000 : 0x08000;
 }
 
 inline unsigned char TinyMSX::psgRead()
 {
     return 0; // TODO: PSG read data procedure
+}
+
+inline void TinyMSX::psgCalc(short* left, short* right)
+{
+    for (int i = 0; i < 3; i++) {
+        int regidx = i << 1;
+        if (this->psg.r[regidx]) {
+            unsigned int cc = this->psgCycle + this->psg.c[i];
+            while ((cc & 0x80000000) == 0) {
+                cc -= (this->psg.r[regidx] << (PSG_SHIFT + 4));
+                psg.e[i] ^= 1;
+            }
+            psg.c[i] = cc;
+        } else {
+            psg.e[i] = 1;
+        }
+    }
+    if (psg.np) {
+        unsigned int cc = this->psgCycle + this->psg.c[3];
+        while ((cc & 0x80000000) == 0) {
+            cc -= (this->psg.np << (PSG_SHIFT + 4));
+            this->psg.ns >>= 1;
+            if (this->psg.ns & 1) {
+                this->psg.ns = this->psg.ns ^ this->psg.nx;
+                this->psg.e[3] = 1;
+            } else {
+                this->psg.e[3] = 0;
+            }
+        }
+        this->psg.c[3] = cc;
+    }
+    int w = 0;
+    if (this->psg.e[0]) w += this->psgLevels[this->psg.r[1]];
+    if (this->psg.e[1]) w += this->psgLevels[this->psg.r[3]];
+    if (this->psg.e[2]) w += this->psgLevels[this->psg.r[5]];
+    if (this->psg.e[3]) w += this->psgLevels[this->psg.r[7]];
+    w <<= 4;
+    w = (short)w;
+    w *= 45;
+    w /= 10;
+    if (32767 < w) {
+        w = 32767;
+    } else if (w < -32768) {
+        w = -32768;
+    }
+    *left = (short)w;
+    *right = (short)w;
 }
 
 inline unsigned char TinyMSX::vdpReadData()

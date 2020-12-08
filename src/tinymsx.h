@@ -52,6 +52,18 @@ class TinyMSX {
             unsigned char latch;
             unsigned char readBuffer;
         } vdp;
+        struct ProgrammableSoundGenerator {
+            int b;
+            int i;
+            unsigned int r[8];
+            unsigned int c[4];
+            unsigned int e[4];
+            unsigned int np;
+            unsigned int ns;
+            unsigned int nx;
+        } psg;
+        unsigned char psgLevels[16];
+        unsigned int psgCycle;
         struct I8255 {
             unsigned char reg[4];
             unsigned char out[3];
@@ -87,9 +99,9 @@ class TinyMSX {
         inline void updateVdpAddress();
         inline void readVideoMemory();
         inline void updateVdpRegister();
-        inline void psgLatch(unsigned char value);
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
+        inline void psgCalc(short* left, short* right);
         inline void i8255Write(unsigned char port, unsigned char value);
         inline unsigned char i8255Read(unsigned char port);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
