@@ -95,6 +95,8 @@ void TinyMSX::reset()
 {
     if (this->cpu) memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     memset(&this->vdp, 0, sizeof(this->vdp));
+    memset(&this->i8255, 0, sizeof(this->i8255));
+    this->i8255.reg[3] = 0x9B;
     memset(this->ram, this->isMSX1() ? 0b11001001 : 0, sizeof(this->ram));
     this->cpu->reg.PC = this->getInitAddr();
 }
@@ -190,25 +192,16 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             return this->vdpReadStatus();
         case 0xA2: // MSX
             return this->psgRead();
-         default:
+        case 0xA8: // MSX
+        case 0xA9: // MSX
+        case 0xAA: // MSX
+        case 0xAB: // MSX
+            return this->i8255Read(port - 0xA8);
+        default:
             printf("unknown input port $%02X\n", port);
             exit(-1);
    }
     return 0;
-}
-
-inline unsigned char TinyMSX::vdpReadData()
-{
-    unsigned char result = this->vdp.readBuffer;
-    this->readVideoMemory();
-    return result;
-}
-
-inline unsigned char TinyMSX::vdpReadStatus()
-{
-    unsigned char result = this->vdp.stat;
-    this->vdp.stat &= 0b01011111;
-    return this->vdp.stat;
 }
 
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
@@ -232,6 +225,12 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
         case 0xA1: // MSX
             this->psgWrite(value);
             break;
+        case 0xA8: // MSX
+        case 0xA9: // MSX
+        case 0xAA: // MSX
+        case 0xAB: // MSX
+            this->i8255Write(port - 0xA8, value);
+            break;
         default:
             printf("unknown out port $%02X <- $%02X\n", port, value);
             exit(-1);
@@ -251,6 +250,20 @@ inline void TinyMSX::psgWrite(unsigned char value)
 inline unsigned char TinyMSX::psgRead()
 {
     return 0; // TODO: PSG read data procedure
+}
+
+inline unsigned char TinyMSX::vdpReadData()
+{
+    unsigned char result = this->vdp.readBuffer;
+    this->readVideoMemory();
+    return result;
+}
+
+inline unsigned char TinyMSX::vdpReadStatus()
+{
+    unsigned char result = this->vdp.stat;
+    this->vdp.stat &= 0b01011111;
+    return this->vdp.stat;
 }
 
 inline void TinyMSX::vdpWriteData(unsigned char value)
@@ -364,11 +377,13 @@ inline void TinyMSX::drawScanlineMode0(int lineNumber)
 
 inline void TinyMSX::drawScanlineMode2(int lineNumber)
 {
+    // todo: draw Mode 2 characters
     drawSprites(lineNumber);
 }
 
 inline void TinyMSX::drawScanlineMode3(int lineNumber)
 {
+    // todo: draw Mode 3 characters
     drawSprites(lineNumber);
 }
 
@@ -480,6 +495,46 @@ inline void TinyMSX::drawSprites(int lineNumber)
             }
         }
     }
+}
+
+inline unsigned char TinyMSX::i8255Read(unsigned char port)
+{
+    switch (port) {
+        case 0: return this->i8255.reg[3] & 0x10 ? this->i8255.in[0] : this->i8255.reg[0];
+        case 1: return this->i8255.reg[3] & 0x02 ? this->i8255.in[1] : this->i8255.reg[1];
+        case 2: return ((this->i8255.reg[3] & 0x01? this->i8255.in[2] : this->i8255.reg[2]) & 0x0F) | ((this->i8255.reg[3] & 0x08 ? this->i8255.in[2] : this->i8255.reg[2]) & 0xF0);
+        case 3: return this->i8255.reg[3];
+    }
+    return 0;
+}
+
+inline void TinyMSX::i8255Write(unsigned char port, unsigned char value)
+{
+    switch (port) {
+        case 0:
+        case 1:
+        case 2:
+            this->i8255.reg[port] = value;
+            break;
+        case 3:
+            if (value & 0x80) {
+                this->i8255.reg[port] = value;
+            } else {
+                unsigned char n = 1 << ((value & 0x0E) >> 1);
+                if (value & 0x01) {
+                    this->i8255.reg[2] |= n;
+                } else {
+                    this->i8255.reg[2] &= ~n;
+                }
+            }
+            break;
+        default:
+            return;
+    }
+    value = this->i8255.reg[3];
+    this->i8255.out[0] = value & 0x10 ? 0x00 : this->i8255.reg[0];
+    this->i8255.out[1] = value & 0x02 ? 0x00 : this->i8255.reg[1];
+    this->i8255.out[2] = ((value & 0x01 ? 0x00 : this->i8255.reg[2]) & 0x0F) | ((value & 0x08 ? 0x00 : this->i8255.reg[2]) & 0xF0);
 }
 
 inline void TinyMSX::initBIOS()

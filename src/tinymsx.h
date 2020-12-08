@@ -52,6 +52,11 @@ class TinyMSX {
             unsigned char latch;
             unsigned char readBuffer;
         } vdp;
+        struct I8255 {
+            unsigned char reg[4];
+            unsigned char out[3];
+            unsigned char in[3];
+        } i8255;
         struct InternalRegister {
             int frameClock;
             int lineClock;
@@ -85,6 +90,8 @@ class TinyMSX {
         inline void psgLatch(unsigned char value);
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
+        inline void i8255Write(unsigned char port, unsigned char value);
+        inline unsigned char i8255Read(unsigned char port);
         inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
