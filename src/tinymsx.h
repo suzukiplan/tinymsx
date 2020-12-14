@@ -35,7 +35,10 @@
 
 class TinyMSX {
     private:
-        unsigned char bios[0x4000];
+        struct MsxBIOS {
+            unsigned char main[0x8000];
+            unsigned char logo[0x4000];
+        } bios;
         int type;
         unsigned char pad[2];
         unsigned char* rom;
@@ -64,11 +67,10 @@ class TinyMSX {
         } psg;
         unsigned char psgLevels[16];
         unsigned int psgCycle;
-        struct I8255 {
-            unsigned char reg[4];
-            unsigned char out[3];
-            unsigned char in[3];
-        } i8255;
+        struct MemoryRegister {
+            unsigned char page[4];
+            unsigned char slot[4]; // E * * * - B B E E
+        } mem;
         struct InternalRegister {
             int frameClock;
             int lineClock;
@@ -78,10 +80,17 @@ class TinyMSX {
         Z80* cpu;
         TinyMSX(int type, void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
+        bool loadBiosFromFile(const char* path);
+        bool loadBiosFromMemory(void* bios, size_t size);
+        bool loadLogoFromFile(const char* path);
+        bool loadLogoFromMemory(void* logo, size_t size);
         void reset();
         void tick(unsigned char pad1, unsigned char pad2);
         void* quickSave(size_t* size);
         void quickLoad(void* data, size_t size);
+        inline int getVideoMode() { return (vdp.reg[0] & 0b000000010) | (vdp.reg[1] & 0b00010000) >> 4 | (vdp.reg[1] & 0b000001000) >> 1; }
+        inline int getSlotNumber(int page) { return mem.slot[mem.page[page]] & 0b11; }
+        inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
 
     private:
         inline void initBIOS();
@@ -102,9 +111,7 @@ class TinyMSX {
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
         inline void psgCalc(short* left, short* right);
-        inline void i8255Write(unsigned char port, unsigned char value);
-        inline unsigned char i8255Read(unsigned char port);
-        inline int getVideoMode() { return ((vdp.reg[0] & 0b00001110) >> 1) + (vdp.reg[1] & 0b00011000); }
+        inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
         inline void drawScanline(int lineNumber);
@@ -113,4 +120,5 @@ class TinyMSX {
         inline void drawScanlineMode3(int lineNumber);
         inline void drawEmptyScanline(int lineNumber);
         inline void drawSprites(int lineNumber);
+        inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
 };

@@ -46,7 +46,9 @@ void saveBitmap(const char* filename, unsigned short* display, int width, int he
             unsigned char r = (p & 0b0111110000000000) >> 7;
             unsigned char g = (p & 0b0000001111100000) >> 2;
             unsigned char b = (p & 0b0000000000011111) << 3;
-            line[x] = b;
+            line[x] = 0xFF;
+            line[x] <<= 8;
+            line[x] |= b;
             line[x] <<= 8;
             line[x] |= g;
             line[x] <<= 8;
@@ -55,6 +57,30 @@ void saveBitmap(const char* filename, unsigned short* display, int width, int he
         fwrite(line, 1, sizeof(line), fp);
     }
     fclose(fp);
+}
+
+static void print_dump(FILE* fp, const char* title, unsigned char* buf, unsigned short sp, unsigned short sz)
+{
+    fprintf(fp, "\n\n[%s] $%04X - $%04X\n", title, sp, sp + sz - 1);
+
+    int ptr = sp;
+
+    while (ptr - sp < sz) {
+        fprintf(fp, "[$%04X]", ptr);
+        for (int i = 0; i < 16; i++) {
+            if (i == 8) {
+                fprintf(fp, " - %02X", buf[ptr + i]);
+            } else {
+                fprintf(fp, " %02X", buf[ptr + i]);
+            }
+            ptr++;
+            if (sz <= ptr - sp) {
+                fprintf(fp, "\n");
+                return;
+            }
+        }
+        fprintf(fp, "\n");
+    }
 }
 
 int main(int argc, char* argv[])
@@ -86,16 +112,88 @@ int main(int argc, char* argv[])
     fseek(fp, 0, SEEK_SET);
     fread(rom, 1, romSize, fp);
     fclose(fp);
-    TinyMSX msx(TINY_MSX_TYPE_MSX1, rom, romSize, TINY_MSX_COLOR_MODE_RGB555);
+    TinyMSX msx(type, rom, romSize, TINY_MSX_COLOR_MODE_RGB555);
+    if (TINY_MSX_TYPE_MSX1 == type) {
+        if (!msx.loadBiosFromFile("../../bios/cbios_main_msx1.rom")) {
+            puts("load BIOS error");
+            exit(-1);
+        }
+        if (!msx.loadLogoFromFile("../../bios/cbios_logo_msx1.rom")) {
+            puts("load LOGO error");
+            exit(-1);
+        }
+    }
     msx.cpu->setDebugMessage([](void* arg, const char* msg) {
+        static int count;
         TinyMSX* msx = (TinyMSX*)arg;
-        printf("[%04X (%3d)] %s\n", msx->cpu->reg.PC, msx->ir.lineNumber, msg);
+        int pn = msx->cpu->reg.PC / 0x4000;
+        printf("%08d %3d (VI:%02X) (%d-%d %d-%d, %d-%d, %d-%d) %s\n",
+            ++count,
+            msx->ir.lineNumber,
+            msx->getVideoMode(),
+            msx->getSlotNumber(0),
+            msx->getExtSlotNumber(0),
+            msx->getSlotNumber(1),
+            msx->getExtSlotNumber(1),
+            msx->getSlotNumber(2),
+            msx->getExtSlotNumber(2),
+            msx->getSlotNumber(3),
+            msx->getExtSlotNumber(3),
+            msg);
     });
+#if 0
+    msx.cpu->addBreakPoint(0x4042, [](void* arg) {
+        TinyMSX* msx = (TinyMSX*)arg;
+        printf("detect break point: $%04X\n", msx->cpu->reg.PC);
+        exit(0);
+    });
+#endif
     for (int i = 0; i < tickCount; i++) {
         msx.tick(0, 0);
     }
     if (bmp) {
         saveBitmap(bmp, msx.display, 256, 192);
+    }
+
+    {
+        FILE* fp = fopen("vdp.dmp", "wb");
+        if (fp) {
+            switch (msx.getVideoMode()) {
+                case 2: {
+                    unsigned short pn = ((int)(msx.vdp.reg[2] & 0b00001111)) << 10;
+                    unsigned short ct = ((int)(msx.vdp.reg[3] & 0b10000000)) << 6;
+                    unsigned short pg = ((int)(msx.vdp.reg[4] & 0b00000100)) << 11;
+                    unsigned short sa = ((int)(msx.vdp.reg[5] & 0b01111111)) << 7;
+                    unsigned short sg = ((int)(msx.vdp.reg[6] & 0b00000111)) << 11;
+                    fprintf(fp, "Video MODE: $%02X\n", msx.getVideoMode());
+                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.reg[7] / 16, msx.vdp.reg[7] % 16);
+                    fprintf(fp, "PN: $%04X  CT: $%04X  PG: $%04X  SA: $%04X  SG: $%04X\n", pn, ct, pg, sa, sg);
+                    print_dump(fp, "Pattern Name Table", msx.vdp.ram, pn, 768);
+                    print_dump(fp, "Color Table", msx.vdp.ram, ct, 6144);
+                    print_dump(fp, "Character Pattern Generator", msx.vdp.ram, pg, 6144);
+                    print_dump(fp, "Sprite Attribute", msx.vdp.ram, sa, 128);
+                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ram, sg, 2048);
+                    break;
+                }
+                default: {
+                    // dump as Mode 0
+                    unsigned short pn = ((int)(msx.vdp.reg[2] & 0b00001111)) << 10;
+                    unsigned short ct = ((int)msx.vdp.reg[3]) << 6;
+                    unsigned short pg = ((int)(msx.vdp.reg[4] & 0b00000111)) << 11;
+                    unsigned short sa = ((int)(msx.vdp.reg[5] & 0b01111111)) << 7;
+                    unsigned short sg = ((int)(msx.vdp.reg[6] & 0b00000111)) << 11;
+                    fprintf(fp, "Video MODE: $%02X\n", msx.getVideoMode());
+                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.reg[7] / 16, msx.vdp.reg[7] % 16);
+                    fprintf(fp, "PN: $%04X  CT: $%04X  PG: $%04X  SA: $%04X  SG: $%04X\n", pn, ct, pg, sa, sg);
+                    print_dump(fp, "Pattern Name Table", msx.vdp.ram, pn, 768);
+                    print_dump(fp, "Color Table", msx.vdp.ram, ct, 32);
+                    print_dump(fp, "Character Pattern Generator", msx.vdp.ram, pg, 2048);
+                    print_dump(fp, "Sprite Attribute", msx.vdp.ram, sa, 128);
+                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ram, sg, 2048);
+                }
+            }
+            fclose(fp);
+        }
     }
     return 0;
 }
