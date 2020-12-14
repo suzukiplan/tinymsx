@@ -48,11 +48,11 @@ void saveBitmap(const char* filename, unsigned short* display, int width, int he
             unsigned char b = (p & 0b0000000000011111) << 3;
             line[x] = 0xFF;
             line[x] <<= 8;
-            line[x] |= b;
+            line[x] |= r;
             line[x] <<= 8;
             line[x] |= g;
             line[x] <<= 8;
-            line[x] |= r;
+            line[x] |= b;
         }
         fwrite(line, 1, sizeof(line), fp);
     }
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
     });
 #endif
     for (int i = 0; i < tickCount; i++) {
-        msx.tick(0, 0);
+        msx.tick(0xFF, 0xFF);
     }
     if (bmp) {
         saveBitmap(bmp, msx.display, 256, 192);

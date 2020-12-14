@@ -501,7 +501,7 @@ inline void TinyMSX::drawScanlineMode0(int lineNumber)
     int pg = (this->vdp.reg[4] & 0b00000111) << 11;
     int bd = this->vdp.reg[7] & 0b00001111;
     int pixelLine = lineNumber % 8;
-    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 24 * 32];
+    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 8 * 32];
     int cur = lineNumber * 256;
     for (int i = 0; i < 32; i++) {
         unsigned char ptn = this->vdp.ram[pg + nam[i] * 8 + pixelLine];
@@ -527,18 +527,21 @@ inline void TinyMSX::drawScanlineMode2(int lineNumber)
 {
     int pn = (this->vdp.reg[2] & 0b00001111) << 10;
     int ct = (this->vdp.reg[3] & 0b10000000) << 6;
-    ct += (lineNumber / 64) * 2048;
-    ct &= ((this->vdp.reg[3] & 0b01111111) << 6) | 0b00111111;
+    int cmask = this->vdp.reg[3] & 0b01111111;
+    cmask <<= 3;
+    cmask |= 0x07;
     int pg = (this->vdp.reg[4] & 0b00000100) << 11;
-    pg += (lineNumber / 64) * 2048;
-    pg &= ((this->vdp.reg[4] & 0b00000011) << 8) | 0b11111111;
+    int pmask = this->vdp.reg[4] & 0b00000011;
+    pmask <<= 8;
+    pmask |= 0xFF;
     int bd = this->vdp.reg[7] & 0b00001111;
     int pixelLine = lineNumber % 8;
-    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 24 * 32];
+    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 8 * 32];
     int cur = lineNumber * 256;
+    int ci = (lineNumber / 64) * 256;
     for (int i = 0; i < 32; i++) {
-        unsigned char ptn = this->vdp.ram[pg + nam[i] * 8 + pixelLine];
-        unsigned char c = this->vdp.ram[ct + nam[i] * 8 + pixelLine];
+        unsigned char ptn = this->vdp.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
+        unsigned char c = this->vdp.ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
         unsigned char cc[2];
         cc[1] = (c & 0xF0) >> 4;
         cc[1] = cc[1] ? cc[1] : bd;
@@ -596,7 +599,7 @@ inline void TinyMSX::drawSprites(int lineNumber)
         unsigned char col = this->vdp.ram[cur++];
         if (col & 0x80) x -= 32;
         col &= 0b00001111;
-        y--;
+        // y--;
         if (mag) {
             if (si) {
                 // 16x16 x 2
@@ -607,8 +610,9 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat |= 0b01000000 | i;
                         break;
                     }
-                    cur = sg + (ptn & 252) * 8 + lineNumber % 8;
-                    int dcur = y * 256;
+                    int pixelLine = lineNumber - y;
+                    cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
+                    int dcur = lineNumber * 256;
                     for (int j = 0; j < 16; j++, x++) {
                         if (this->vdp.ram[cur] & bit[j / 2]) this->display[dcur + x] = this->palette[col];
                     }
@@ -627,7 +631,7 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         break;
                     }
                     cur = sg + ptn * 8 + lineNumber % 8;
-                    int dcur = y * 256;
+                    int dcur = lineNumber * 256;
                     for (int j = 0; j < 16; j++, x++) {
                         if (this->vdp.ram[cur] & bit[j / 2]) this->display[dcur + x] = this->palette[col];
                     }
@@ -643,12 +647,13 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat |= 0b01000000 | i;
                         break;
                     }
-                    cur = sg + (ptn & 252) * 8 + lineNumber % 8;
-                    int dcur = y * 256;
+                    int pixelLine = lineNumber - y;
+                    cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
+                    int dcur = lineNumber * 256;
                     for (int j = 0; j < 8; j++, x++) {
                         if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = this->palette[col];
                     }
-                    cur += 8;
+                    cur += 16;
                     for (int j = 0; j < 8; j++, x++) {
                         if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = this->palette[col];
                     }
@@ -663,7 +668,7 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         break;
                     }
                     cur = sg + ptn * 8 + lineNumber % 8;
-                    int dcur = y * 256;
+                    int dcur = lineNumber * 256;
                     for (int j = 0; j < 8; j++, x++) {
                         if (this->vdp.ram[cur] & bit[j]) this->display[dcur + x] = this->palette[col];
                     }
