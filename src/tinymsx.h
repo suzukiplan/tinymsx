@@ -24,14 +24,11 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
+#ifndef INCLUDE_TINYMSX_H
+#define INCLUDE_TINYMSX_H
 #include <stdio.h>
 #include "z80.hpp"
-
-#define TINY_MSX_TYPE_SG1000 0
-#define TINY_MSX_TYPE_MSX1 1
-
-#define TINY_MSX_COLOR_MODE_RGB555 0
-#define TINY_MSX_COLOR_MODE_RGB565 1
+#include "tinymsx_def.h"
 
 class TinyMSX {
     private:
@@ -122,3 +119,5 @@ class TinyMSX {
         inline void drawSprites(int lineNumber);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
 };
+
+#endif
