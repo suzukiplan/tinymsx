@@ -252,8 +252,8 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xC1:
             case 0xDD:
                 return this->pad[1];
-            case 0xDE:
-            case 0xDF:
+            case 0xDE: // keyboard port (ignore)
+            case 0xDF: // keyboard port (ignore)
                 return 0xFF;
             case 0xBE:
                 return this->vdpReadData();
@@ -633,7 +633,9 @@ inline void TinyMSX::drawSprites(int lineNumber)
     int sg = (this->vdp.reg[6] & 0b00000111) << 11;
     int sn = 0;
     unsigned char dlog[256];
+    unsigned char wlog[256];
     memset(dlog, 0, sizeof(dlog));
+    memset(wlog, 0, sizeof(wlog));
     for (int i = 0; i < 32; i++) {
         int cur = sa + i * 4;
         unsigned char y = this->vdp.ram[cur++];
@@ -653,24 +655,35 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat &= 0b11100000;
                         this->vdp.stat |= 0b01000000 | i;
                         break;
+                    } else {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= i;
                     }
                     int pixelLine = lineNumber - y;
                     cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                     int dcur = lineNumber * 256;
                     for (int j = 0; j < 16; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j / 2]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
                     cur += 8;
                     for (int j = 0; j < 16; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j / 2]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
@@ -683,14 +696,21 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat &= 0b11100000;
                         this->vdp.stat |= 0b01000000 | i;
                         break;
+                    } else {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= i;
                     }
                     cur = sg + ptn * 8 + lineNumber % 8;
                     int dcur = lineNumber * 256;
                     for (int j = 0; j < 16; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j / 2]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
@@ -705,24 +725,35 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat &= 0b11100000;
                         this->vdp.stat |= 0b01000000 | i;
                         break;
+                    } else {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= i;
                     }
                     int pixelLine = lineNumber - y;
                     cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                     int dcur = lineNumber * 256;
                     for (int j = 0; j < 8; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
                     cur += 16;
                     for (int j = 0; j < 8; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
@@ -735,14 +766,21 @@ inline void TinyMSX::drawSprites(int lineNumber)
                         this->vdp.stat &= 0b11100000;
                         this->vdp.stat |= 0b01000000 | i;
                         break;
+                    } else {
+                        this->vdp.stat &= 0b11100000;
+                        this->vdp.stat |= i;
                     }
                     cur = sg + ptn * 8 + lineNumber % 8;
                     int dcur = lineNumber * 256;
                     for (int j = 0; j < 8; j++, x++) {
+                        if (wlog[x]) {
+                            this->vdp.stat |= 0b00100000;
+                        }
                         if (0 == dlog[x]) {
                             if (this->vdp.ram[cur] & bit[j]) {
                                 this->display[dcur + x] = this->palette[col];
                                 dlog[x] = col;
+                                wlog[x] = 1;
                             }
                         }
                     }
