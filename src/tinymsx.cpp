@@ -252,13 +252,14 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xC1:
             case 0xDD:
                 return this->pad[1];
-            case 0xDE: // keyboard port (ignore)
-            case 0xDF: // keyboard port (ignore)
-                return 0xFF;
             case 0xBE:
                 return this->vdpReadData();
             case 0xBF:
                 return this->vdpReadStatus();
+            case 0xD9: // unknown (read from 007: it will occur when pushed a trigger at the title)
+            case 0xDE: // keyboard port (ignore)
+            case 0xDF: // keyboard port (ignore)
+                return 0xFF;
             default:
                 printf("unknown input port $%02X\n", port);
                 exit(-1);
