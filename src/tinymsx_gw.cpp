@@ -33,3 +33,5 @@ void tinymsx_reset(const void* context) { ((TinyMSX*)context)->reset(); }
 void tinymsx_tick(const void* context, unsigned char pad1, unsigned char pad2) { ((TinyMSX*)context)->tick(pad1, pad2); }
 unsigned short* tinymsx_display(const void* context) { return ((TinyMSX*)context)->display; }
 void* tinymsx_sound(const void* context, size_t* size) { return ((TinyMSX*)context)->getSoundBuffer(size); }
+const void* tinymsx_save(const void* context, size_t* size) { return ((TinyMSX*)context)->saveState(size); }
+void tinymsx_load(const void* context, const void* data, size_t size) { ((TinyMSX*)context)->loadState(data, size); }

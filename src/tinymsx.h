@@ -42,6 +42,7 @@ class TinyMSX {
         size_t romSize;
         short soundBuffer[65536];
         unsigned short soundBufferCursor;
+        unsigned char tmpBuffer[1024 * 1024];
     public:
         unsigned short display[256 * 192];
         unsigned short palette[16];
@@ -86,8 +87,8 @@ class TinyMSX {
         void reset();
         void tick(unsigned char pad1, unsigned char pad2);
         void* getSoundBuffer(size_t* size);
-        void* quickSave(size_t* size);
-        void quickLoad(void* data, size_t size);
+        const void* saveState(size_t* size);
+        void loadState(const void* data, size_t size);
         inline int getVideoMode() { return (vdp.reg[0] & 0b000000010) | (vdp.reg[1] & 0b00010000) >> 4 | (vdp.reg[1] & 0b000001000) >> 1; }
         inline int getSlotNumber(int page) { return mem.slot[mem.page[page]] & 0b11; }
         inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
@@ -122,6 +123,7 @@ class TinyMSX {
         inline void drawEmptyScanline(int lineNumber);
         inline void drawSprites(int lineNumber);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
+        size_t calcAvairableRamSize();
 };
 
 #endif

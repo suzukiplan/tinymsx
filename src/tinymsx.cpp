@@ -31,6 +31,13 @@
 #define SAMPLE_RATE 44100.0
 #define PSG_SHIFT 16
 
+#define STATE_CHUNK_CPU "CP"
+#define STATE_CHUNK_RAM "RA"
+#define STATE_CHUNK_VDP "VD"
+#define STATE_CHUNK_PSG "PS"
+#define STATE_CHUNK_MEM "MR"
+#define STATE_CHUNK_INT "IR"
+
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
@@ -84,7 +91,7 @@ void TinyMSX::reset()
     }
     memset(&this->vdp, 0, sizeof(this->vdp));
     memset(&this->mem, 0, sizeof(this->mem));
-    memset(this->ram, 0xFF, sizeof(this->ram));
+    memset(this->ram, 0, sizeof(this->ram));
     this->psgLevels[0] = 255;
     this->psgLevels[1] = 180;
     this->psgLevels[2] = 127;
@@ -792,4 +799,71 @@ bool TinyMSX::loadLogoFromMemory(void* logo, size_t size)
     if (size != 0x4000) return false;
     memcpy(this->bios.logo, logo, size);
     return true;
+}
+
+static int writeSaveState(unsigned char* buf, int ptr, const char* c, size_t s, void* data)
+{
+    buf[ptr++] = c[0];
+    buf[ptr++] = c[1];
+    unsigned short size = s & 0xFFFF;
+    memcpy(&buf[ptr], &size, 2);
+    ptr += 2;
+    memcpy(&buf[ptr], data, size);
+    return (int)(s + 4);
+}
+
+size_t TinyMSX::calcAvairableRamSize()
+{
+    size_t result = 0;
+    for (int i = 0; i < sizeof(this->ram); i++) {
+        if (this->ram[i]) {
+            result = i + 1;
+        }
+    }
+    return result;
+}
+
+const void* TinyMSX::saveState(size_t* size)
+{
+    int ptr = 0;
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_CPU, sizeof(this->cpu->reg), &this->cpu->reg);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_RAM, this->calcAvairableRamSize(), this->ram);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp), &this->vdp);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->psg), &this->psg);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_INT, sizeof(this->ir), &this->ir);
+    *size = ptr;
+    return this->tmpBuffer;
+}
+
+void TinyMSX::loadState(const void* data, size_t size)
+{
+    reset();
+    char* d = (char*)data;
+    int s = (int)size;
+    unsigned short ds;
+    while (4 < s) {
+        memcpy(&ds, &d[2], 2);
+        const char* ch = &d[0];
+        d += 4;
+        s -= 4;
+        if (s < ds) break; // invalid size
+        if (0 == strncmp(ch, STATE_CHUNK_CPU, 2)) {
+            memcpy(&((Z80*)this->cpu)->reg, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_RAM, 2)) {
+            memcpy(this->ram, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_VDP, 2)) {
+            memcpy(&this->vdp, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_PSG, 2)) {
+            memcpy(&this->psg, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
+            memcpy(&this->mem, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_INT, 2)) {
+            memcpy(&this->ir, d, ds);
+        } else {
+            // ignore unknown chunk
+        }
+        d += ds;
+        s -= ds;
+    }
 }

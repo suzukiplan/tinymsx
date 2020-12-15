@@ -39,6 +39,8 @@ void tinymsx_reset(const void* context);
 void tinymsx_tick(const void* context, unsigned char pad1, unsigned char pad2);
 unsigned short* tinymsx_display(const void* context);
 void* tinymsx_sound(const void* context, size_t* size);
+const void* tinymsx_save(const void* context, size_t* size);
+void tinymsx_load(const void* context, const void* data, size_t size);
 
 #ifdef __cplusplus
 };
