@@ -1,0 +1,116 @@
+//
+//  VideoView.m
+//  EmuBoard
+//
+//  Created by 鈴木　洋司　 on 2018/12/30.
+//  Copyright © 2018年 SUZUKIPLAN. All rights reserved.
+//
+
+#import "VideoView.h"
+#import "VideoLayer.h"
+#import "EmuBoard.h"
+#import "constants.h"
+#include <ctype.h>
+
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context);
+extern unsigned char emu_key;
+
+@interface VideoView()
+@property (nonatomic) VideoLayer* videoLayer;
+@property CVDisplayLinkRef displayLink;
+@property NSInteger score;
+@property BOOL isGameOver;
+@end
+
+@implementation VideoView
+
++ (Class)layerClass
+{
+    return [VideoLayer class];
+}
+
+- (id)initWithFrame:(CGRect)frame
+{
+    if ((self = [super initWithFrame:frame]) != nil) {
+        [self setWantsLayer:YES];
+        _score = -1;
+        _isGameOver = -1 ? YES : NO;
+        _videoLayer = [VideoLayer layer];
+        [self setLayer:_videoLayer];
+        CVDisplayLinkCreateWithActiveCGDisplays(&_displayLink);
+        CVDisplayLinkSetOutputCallback(_displayLink, MyDisplayLinkCallback, (__bridge void *)self);
+        CVDisplayLinkStart(_displayLink);
+    }
+    return self;
+}
+
+- (void)releaseDisplayLink
+{
+    if (_displayLink) {
+        CVDisplayLinkStop(_displayLink);
+        CVDisplayLinkRelease(_displayLink);
+        _displayLink = nil;
+    }
+}
+
+- (void)vsync
+{
+    emu_vsync();
+    [self.videoLayer drawVRAM];
+    unsigned int score = emu_getScore();
+    BOOL isGameOver = emu_isGameOver() ? YES : NO;
+    if (score != _score || isGameOver != _isGameOver) {
+        _score = score;
+        _isGameOver = isGameOver;
+        if (_delegate) {
+            [_delegate videoView:self
+                  didChangeScore:_score
+                      isGameOver:_isGameOver];
+        }
+    }
+}
+
+- (BOOL)acceptsFirstResponder
+{
+    return YES;
+}
+
+- (void)keyDown:(NSEvent *)event
+{
+    unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
+    switch (tolower(c)) {
+        case 0xF703: emu_key |= 0b10000000; break;
+        case 0xF702: emu_key |= 0b01000000; break;
+        case 0xF701: emu_key |= 0b00100000; break;
+        case 0xF700: emu_key |= 0b00010000; break;
+        case 0x000d: emu_key |= 0b00001000; break;
+        case 0x0020: emu_key |= 0b00000100; break;
+        case 0x0078: emu_key |= 0b00000010; break;
+        case 0x007A: emu_key |= 0b00000001; break;
+        // default: NSLog(@"keyDown: %04X", tolower(c));
+    }
+}
+
+- (void)keyUp:(NSEvent *)event
+{
+    unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
+    switch (tolower(c)) {
+        case 0xF703: emu_key &= 0b01111111; break;
+        case 0xF702: emu_key &= 0b10111111; break;
+        case 0xF701: emu_key &= 0b11011111; break;
+        case 0xF700: emu_key &= 0b11101111; break;
+        case 0x000d: emu_key &= 0b11110111; break;
+        case 0x0020: emu_key &= 0b11111011; break;
+        case 0x0078: emu_key &= 0b11111101; break;
+        case 0x007A: emu_key &= 0b11111110; break;
+        // default: NSLog(@"keyUp: %04X", tolower(c));
+    }
+}
+
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context)
+{
+    [(__bridge VideoLayer *)context performSelectorOnMainThread:@selector(vsync) withObject:nil waitUntilDone:NO];
+    return kCVReturnSuccess;
+}
+
+@end

@@ -1,0 +1,411 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D0D90BA225440FB00FB9699 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D90B9225440FB00FB9699 /* vgsspu_al.c */; };
+		74AAA53225883DA9007192EF /* tinymsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74AAA52C25883DA9007192EF /* tinymsx.cpp */; };
+		74AAA53325883DA9007192EF /* tinymsx_gw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74AAA52F25883DA9007192EF /* tinymsx_gw.cpp */; };
+		94D1AB2A21D86ADC00DC595E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2921D86ADC00DC595E /* AppDelegate.m */; };
+		94D1AB2D21D86ADC00DC595E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2C21D86ADC00DC595E /* ViewController.m */; };
+		94D1AB2F21D86ADD00DC595E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 94D1AB2E21D86ADD00DC595E /* Assets.xcassets */; };
+		94D1AB3221D86ADD00DC595E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 94D1AB3021D86ADD00DC595E /* Main.storyboard */; };
+		94D1AB3521D86ADD00DC595E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB3421D86ADD00DC595E /* main.m */; };
+		94D1AB3E21D86DC900DC595E /* VideoView.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB3D21D86DC900DC595E /* VideoView.m */; };
+		94D1AB4121D86E0900DC595E /* VideoLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB4021D86E0900DC595E /* VideoLayer.m */; };
+		94D1AB4721D8987800DC595E /* EmuBoard.c in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB4621D8987800DC595E /* EmuBoard.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1D0D90B8225440FA00FB9699 /* vgsspu_al.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
+		1D0D90B9225440FB00FB9699 /* vgsspu_al.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
+		74AAA52C25883DA9007192EF /* tinymsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinymsx.cpp; path = ../../../../src/tinymsx.cpp; sourceTree = "<group>"; };
+		74AAA52D25883DA9007192EF /* tinymsx_gw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinymsx_gw.h; path = ../../../../src/tinymsx_gw.h; sourceTree = "<group>"; };
+		74AAA52E25883DA9007192EF /* tinymsx_def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinymsx_def.h; path = ../../../../src/tinymsx_def.h; sourceTree = "<group>"; };
+		74AAA52F25883DA9007192EF /* tinymsx_gw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinymsx_gw.cpp; path = ../../../../src/tinymsx_gw.cpp; sourceTree = "<group>"; };
+		74AAA53025883DA9007192EF /* tinymsx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinymsx.h; path = ../../../../src/tinymsx.h; sourceTree = "<group>"; };
+		74AAA53125883DA9007192EF /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../../src/z80.hpp; sourceTree = "<group>"; };
+		94D1AB2521D86ADC00DC595E /* EmuBoard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmuBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		94D1AB2821D86ADC00DC595E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		94D1AB2921D86ADC00DC595E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		94D1AB2B21D86ADC00DC595E /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		94D1AB2C21D86ADC00DC595E /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		94D1AB2E21D86ADD00DC595E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		94D1AB3121D86ADD00DC595E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		94D1AB3321D86ADD00DC595E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		94D1AB3421D86ADD00DC595E /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		94D1AB3621D86ADD00DC595E /* EmuBoard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EmuBoard.entitlements; sourceTree = "<group>"; };
+		94D1AB3C21D86DC900DC595E /* VideoView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoView.h; sourceTree = "<group>"; };
+		94D1AB3D21D86DC900DC595E /* VideoView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoView.m; sourceTree = "<group>"; };
+		94D1AB3F21D86E0900DC595E /* VideoLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoLayer.h; sourceTree = "<group>"; };
+		94D1AB4021D86E0900DC595E /* VideoLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoLayer.m; sourceTree = "<group>"; };
+		94D1AB4221D8767900DC595E /* constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = constants.h; sourceTree = "<group>"; };
+		94D1AB4321D87FFF00DC595E /* EmuBoard.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EmuBoard.h; sourceTree = "<group>"; };
+		94D1AB4621D8987800DC595E /* EmuBoard.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EmuBoard.c; sourceTree = "<group>"; };
+		94D1AB5321D8A59400DC595E /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		94D1AB2221D86ADC00DC595E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		74AAA52B25883D81007192EF /* tiny-msx */ = {
+			isa = PBXGroup;
+			children = (
+				74AAA52E25883DA9007192EF /* tinymsx_def.h */,
+				74AAA52F25883DA9007192EF /* tinymsx_gw.cpp */,
+				74AAA52D25883DA9007192EF /* tinymsx_gw.h */,
+				74AAA52C25883DA9007192EF /* tinymsx.cpp */,
+				74AAA53025883DA9007192EF /* tinymsx.h */,
+				74AAA53125883DA9007192EF /* z80.hpp */,
+			);
+			path = "tiny-msx";
+			sourceTree = "<group>";
+		};
+		94D1AB1C21D86ADC00DC595E = {
+			isa = PBXGroup;
+			children = (
+				94D1AB2721D86ADC00DC595E /* EmuBoard */,
+				94D1AB2621D86ADC00DC595E /* Products */,
+				94D1AB5221D8A59400DC595E /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		94D1AB2621D86ADC00DC595E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				94D1AB2521D86ADC00DC595E /* EmuBoard.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		94D1AB2721D86ADC00DC595E /* EmuBoard */ = {
+			isa = PBXGroup;
+			children = (
+				74AAA52B25883D81007192EF /* tiny-msx */,
+				94D1AB4221D8767900DC595E /* constants.h */,
+				94D1AB2821D86ADC00DC595E /* AppDelegate.h */,
+				94D1AB2921D86ADC00DC595E /* AppDelegate.m */,
+				94D1AB2B21D86ADC00DC595E /* ViewController.h */,
+				94D1AB2C21D86ADC00DC595E /* ViewController.m */,
+				94D1AB3C21D86DC900DC595E /* VideoView.h */,
+				94D1AB3D21D86DC900DC595E /* VideoView.m */,
+				94D1AB3F21D86E0900DC595E /* VideoLayer.h */,
+				94D1AB4021D86E0900DC595E /* VideoLayer.m */,
+				94D1AB4321D87FFF00DC595E /* EmuBoard.h */,
+				94D1AB4621D8987800DC595E /* EmuBoard.c */,
+				1D0D90B9225440FB00FB9699 /* vgsspu_al.c */,
+				1D0D90B8225440FA00FB9699 /* vgsspu_al.h */,
+				94D1AB2E21D86ADD00DC595E /* Assets.xcassets */,
+				94D1AB3021D86ADD00DC595E /* Main.storyboard */,
+				94D1AB3321D86ADD00DC595E /* Info.plist */,
+				94D1AB3421D86ADD00DC595E /* main.m */,
+				94D1AB3621D86ADD00DC595E /* EmuBoard.entitlements */,
+			);
+			path = EmuBoard;
+			sourceTree = "<group>";
+		};
+		94D1AB5221D8A59400DC595E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				94D1AB5321D8A59400DC595E /* OpenAL.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		94D1AB2421D86ADC00DC595E /* EmuBoard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 94D1AB3921D86ADD00DC595E /* Build configuration list for PBXNativeTarget "EmuBoard" */;
+			buildPhases = (
+				94D1AB2121D86ADC00DC595E /* Sources */,
+				94D1AB2221D86ADC00DC595E /* Frameworks */,
+				94D1AB2321D86ADC00DC595E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EmuBoard;
+			productName = EmuBoard;
+			productReference = 94D1AB2521D86ADC00DC595E /* EmuBoard.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		94D1AB1D21D86ADC00DC595E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1220;
+				ORGANIZATIONNAME = SUZUKIPLAN;
+				TargetAttributes = {
+					94D1AB2421D86ADC00DC595E = {
+						CreatedOnToolsVersion = 10.1;
+					};
+				};
+			};
+			buildConfigurationList = 94D1AB2021D86ADC00DC595E /* Build configuration list for PBXProject "EmuBoard" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 94D1AB1C21D86ADC00DC595E;
+			productRefGroup = 94D1AB2621D86ADC00DC595E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				94D1AB2421D86ADC00DC595E /* EmuBoard */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		94D1AB2321D86ADC00DC595E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				94D1AB2F21D86ADD00DC595E /* Assets.xcassets in Resources */,
+				94D1AB3221D86ADD00DC595E /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		94D1AB2121D86ADC00DC595E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74AAA53225883DA9007192EF /* tinymsx.cpp in Sources */,
+				94D1AB4721D8987800DC595E /* EmuBoard.c in Sources */,
+				94D1AB3E21D86DC900DC595E /* VideoView.m in Sources */,
+				94D1AB2D21D86ADC00DC595E /* ViewController.m in Sources */,
+				94D1AB3521D86ADD00DC595E /* main.m in Sources */,
+				74AAA53325883DA9007192EF /* tinymsx_gw.cpp in Sources */,
+				1D0D90BA225440FB00FB9699 /* vgsspu_al.c in Sources */,
+				94D1AB2A21D86ADC00DC595E /* AppDelegate.m in Sources */,
+				94D1AB4121D86E0900DC595E /* VideoLayer.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		94D1AB3021D86ADD00DC595E /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				94D1AB3121D86ADD00DC595E /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		94D1AB3721D86ADD00DC595E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				"OTHER_CFLAGS[arch=*]" = (
+					"-DJOE_REMOVE_EXRAM",
+					"-DJOE_PATCH_NO_IMAGE",
+					"-DJOE_REMOVE_NIZTBL",
+					"-DJOE_REMOVE_CTNTBL",
+					"-DJOE_BREAKPOINT",
+					"-DFORCE_DISABLE_ALIGNED_UNION",
+				);
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		94D1AB3821D86ADD00DC595E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				"OTHER_CFLAGS[arch=*]" = (
+					"-DJOE_REMOVE_EXRAM",
+					"-DJOE_REMOVE_NIZTBL",
+					"-DJOE_PATCH_NO_IMAGE",
+					"-DJOE_REMOVE_CTNTBL",
+					"-DJOE_BREAKPOINT",
+					"-DFORCE_DISABLE_ALIGNED_UNION",
+				);
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		94D1AB3A21D86ADD00DC595E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = EmuBoard/EmuBoard.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = EmuBoard/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = jp.co.d4e.CocoaFC;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		94D1AB3B21D86ADD00DC595E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = EmuBoard/EmuBoard.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = EmuBoard/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = jp.co.d4e.CocoaFC;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		94D1AB2021D86ADC00DC595E /* Build configuration list for PBXProject "EmuBoard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				94D1AB3721D86ADD00DC595E /* Debug */,
+				94D1AB3821D86ADD00DC595E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		94D1AB3921D86ADD00DC595E /* Build configuration list for PBXNativeTarget "EmuBoard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				94D1AB3A21D86ADD00DC595E /* Debug */,
+				94D1AB3B21D86ADD00DC595E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 94D1AB1D21D86ADC00DC595E /* Project object */;
+}
