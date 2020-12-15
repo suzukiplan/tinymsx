@@ -75,7 +75,7 @@ class TinyMSX {
         } ir;
         unsigned char ram[0x4000];
         Z80* cpu;
-        TinyMSX(int type, void* rom, size_t romSize, int colorMode);
+        TinyMSX(int type, const void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
         bool loadBiosFromFile(const char* path);
         bool loadBiosFromMemory(void* bios, size_t size);

@@ -31,7 +31,7 @@
 #define SAMPLE_RATE 44100.0
 #define PSG_SHIFT 16
 
-TinyMSX::TinyMSX(int type, void* rom, size_t romSize, int colorMode)
+TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
     unsigned int rgb[16] = { 0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF };
@@ -155,7 +155,6 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             }
         }
         int pn = addr / 0x4000;
-        int sn = this->mem.page[pn];
         switch (this->getSlotNumber(pn)) {
             case 0: return this->bios.main[addr & 0x7FFF];
             case 1: return this->bios.logo[addr & 0x3FFF];
