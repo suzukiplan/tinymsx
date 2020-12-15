@@ -36,7 +36,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
     this->type = type;
     unsigned int rgb[16] = { 0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF };
     switch (colorMode) {
-        case TINY_MSX_COLOR_MODE_RGB555:
+        case TINYMSX_COLOR_MODE_RGB555:
             for (int i = 0; i < 16; i++) {
                 this->palette[i] = 0;
                 this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 9;
@@ -44,7 +44,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
                 this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
             }
             break;
-        case TINY_MSX_COLOR_MODE_RGB565:
+        case TINYMSX_COLOR_MODE_RGB565:
             for (int i = 0; i < 16; i++) {
                 this->palette[i] = 0;
                 this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 8;

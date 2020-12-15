@@ -94,8 +94,8 @@ class TinyMSX {
 
     private:
         inline void initBIOS();
-        inline bool isSG1000() { return this->type == TINY_MSX_TYPE_SG1000; }
-        inline bool isMSX1() { return this->type == TINY_MSX_TYPE_MSX1; }
+        inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
+        inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
         inline unsigned short getInitAddr();
         inline unsigned char readMemory(unsigned short addr);
         inline void writeMemory(unsigned short addr, unsigned char value);
