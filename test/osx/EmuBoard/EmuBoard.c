@@ -122,3 +122,15 @@ void emu_destroy()
     }
     emu_initialized = 0;
 }
+
+const void* emu_saveState(size_t* size)
+{
+    if (!emu_initialized || !emu_msx) return NULL;
+    return tinymsx_save(emu_msx, size);
+}
+
+void emu_loadState(const void* state, size_t size)
+{
+    if (!emu_initialized || !emu_msx) return;
+    tinymsx_load(emu_msx, state, size);
+}

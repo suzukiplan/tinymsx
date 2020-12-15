@@ -15,3 +15,5 @@ void emu_vsync(void);
 void emu_destroy(void);
 unsigned int emu_getScore(void);
 int emu_isGameOver(void);
+const void* emu_saveState(size_t* size);
+void emu_loadState(const void* state, size_t size);

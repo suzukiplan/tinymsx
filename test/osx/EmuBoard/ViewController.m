@@ -19,6 +19,7 @@
 @property (nonatomic) NSTextField* scoreView;
 @property (nonatomic) NSData* rom;
 @property (nonatomic) BOOL isFullScreen;
+@property (nonatomic, nullable) NSData* saveData;
 @end
 
 @implementation ViewController
@@ -179,11 +180,19 @@
 
 - (void)menuQuickSaveToMemory:(id)sender
 {
-    [_appDelegate.menuQuickLoadFromMemory setEnabled:NO];
+    [_appDelegate.menuQuickLoadFromMemory setEnabled:YES];
+    size_t size;
+    const void* data = emu_saveState(&size);
+    NSLog(@"saving: %ld bytes", size);
+    _saveData = [[NSData alloc] initWithBytes:data length:size];
 }
 
 - (void)menuQuickLoadFromMemory:(id)sender
 {
+    if (_saveData) {
+        NSLog(@"loading");
+        emu_loadState(_saveData.bytes, _saveData.length);
+    }
 }
 
 @end
