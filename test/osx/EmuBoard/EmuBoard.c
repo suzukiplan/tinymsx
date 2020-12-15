@@ -83,7 +83,7 @@ void emu_reset()
 void emu_vsync()
 {
     if (!emu_initialized || !emu_msx) return;
-    tinymsx_tick(emu_msx, 0xFF, 0xFF);
+    tinymsx_tick(emu_msx, emu_key, 0);
     const void* ptr = tinymsx_display(emu_msx);
     memcpy(emu_vram, ptr, sizeof(emu_vram));
     size_t pcmSize;

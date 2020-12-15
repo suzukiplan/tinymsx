@@ -10,6 +10,7 @@
 #import "VideoLayer.h"
 #import "EmuBoard.h"
 #import "constants.h"
+#import "tinymsx_def.h"
 #include <ctype.h>
 
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context);
@@ -78,16 +79,16 @@ extern unsigned char emu_key;
 - (void)keyDown:(NSEvent *)event
 {
     unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
+    //NSLog(@"keyDown: %04X", tolower(c));
     switch (tolower(c)) {
-        case 0xF703: emu_key |= 0b10000000; break;
-        case 0xF702: emu_key |= 0b01000000; break;
-        case 0xF701: emu_key |= 0b00100000; break;
-        case 0xF700: emu_key |= 0b00010000; break;
-        case 0x000d: emu_key |= 0b00001000; break;
-        case 0x0020: emu_key |= 0b00000100; break;
-        case 0x0078: emu_key |= 0b00000010; break;
-        case 0x007A: emu_key |= 0b00000001; break;
-        // default: NSLog(@"keyDown: %04X", tolower(c));
+        case 0xF703: emu_key |= TINYMSX_JOY_RI; break;
+        case 0xF702: emu_key |= TINYMSX_JOY_LE; break;
+        case 0xF701: emu_key |= TINYMSX_JOY_DW; break;
+        case 0xF700: emu_key |= TINYMSX_JOY_UP; break;
+        case 0x000d: emu_key |= TINYMSX_JOY_T2; break;
+        case 0x0020: emu_key |= TINYMSX_JOY_T1; break;
+        case 0x0078: emu_key |= TINYMSX_JOY_T2; break;
+        case 0x007A: emu_key |= TINYMSX_JOY_T1; break;
     }
 }
 
@@ -95,15 +96,14 @@ extern unsigned char emu_key;
 {
     unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
     switch (tolower(c)) {
-        case 0xF703: emu_key &= 0b01111111; break;
-        case 0xF702: emu_key &= 0b10111111; break;
-        case 0xF701: emu_key &= 0b11011111; break;
-        case 0xF700: emu_key &= 0b11101111; break;
-        case 0x000d: emu_key &= 0b11110111; break;
-        case 0x0020: emu_key &= 0b11111011; break;
-        case 0x0078: emu_key &= 0b11111101; break;
-        case 0x007A: emu_key &= 0b11111110; break;
-        // default: NSLog(@"keyUp: %04X", tolower(c));
+        case 0xF703: emu_key &= ~TINYMSX_JOY_RI; break;
+        case 0xF702: emu_key &= ~TINYMSX_JOY_LE; break;
+        case 0xF701: emu_key &= ~TINYMSX_JOY_DW; break;
+        case 0xF700: emu_key &= ~TINYMSX_JOY_UP; break;
+        case 0x000d: emu_key &= ~TINYMSX_JOY_T2; break;
+        case 0x0020: emu_key &= ~TINYMSX_JOY_T1; break;
+        case 0x0078: emu_key &= ~TINYMSX_JOY_T2; break;
+        case 0x007A: emu_key &= ~TINYMSX_JOY_T1; break;
     }
 }
 
