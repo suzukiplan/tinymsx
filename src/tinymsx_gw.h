@@ -33,11 +33,11 @@
 extern "C" {
 #endif
 
-void* tinymsx_create(int type, void* rom, size_t romSize, int colorMode);
-void tinymsx_destroy(void* context);
-void tinymsx_reset(void* context);
-void tinymsx_tick(void* context, unsigned char pad1, unsigned char pad2);
-unsigned short* tinymsx_display(void* context);
+void* tinymsx_create(int type, const void* rom, size_t romSize, int colorMode);
+void tinymsx_destroy(const void* context);
+void tinymsx_reset(const void* context);
+void tinymsx_tick(const void* context, unsigned char pad1, unsigned char pad2);
+unsigned short* tinymsx_display(const void* context);
 
 #ifdef __cplusplus
 };

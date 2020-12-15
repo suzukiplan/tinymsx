@@ -25,8 +25,8 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#ifndef INCLUDE_TINYMSX_GW_H
-#define INCLUDE_TINYMSX_GW_H
+#ifndef INCLUDE_TINYMSX_DEF_H
+#define INCLUDE_TINYMSX_DEF_H
 
 #define TINY_MSX_TYPE_SG1000 0
 #define TINY_MSX_TYPE_MSX1 1
