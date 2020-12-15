@@ -102,6 +102,8 @@ void TinyMSX::reset()
     this->psgLevels[14] = 1;
     this->psgLevels[15] = 0;
     this->psgCycle = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
+    memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
+    this->soundBufferCursor = 0;
 }
 
 unsigned short TinyMSX::getInitAddr()
@@ -125,6 +127,13 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
     if (this->cpu) {
         this->cpu->execute(0x7FFFFFFF);
     }
+}
+
+void* TinyMSX::getSoundBuffer(size_t* size)
+{
+    *size = this->soundBufferCursor * 2;
+    this->soundBufferCursor = 0;
+    return this->soundBuffer;
 }
 
 inline unsigned char TinyMSX::readMemory(unsigned short addr)
@@ -395,6 +404,16 @@ inline void TinyMSX::psgCalc(short* left, short* right)
     *right = (short)w;
 }
 
+inline void TinyMSX::psgExec(int clocks)
+{
+    this->psg.b += clocks * SAMPLE_RATE;
+    while (0 <= this->psg.b) {
+        this->psg.b -= CPU_RATE;
+        psgCalc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
+        soundBufferCursor += 2;
+    }
+}
+
 inline unsigned char TinyMSX::vdpReadData()
 {
     unsigned char result = this->vdp.readBuffer;
@@ -406,7 +425,7 @@ inline unsigned char TinyMSX::vdpReadStatus()
 {
     unsigned char result = this->vdp.stat;
     this->vdp.stat &= 0b01011111;
-    return this->vdp.stat;
+    return result;
 }
 
 inline void TinyMSX::vdpWriteData(unsigned char value)
@@ -456,6 +475,7 @@ inline void TinyMSX::updateVdpRegister()
 
 inline void TinyMSX::consumeClock(int clocks)
 {
+    this->psgExec(clocks);
     while (clocks--) {
         this->ir.frameClock++;
         this->ir.lineClock++;
@@ -561,7 +581,6 @@ inline void TinyMSX::drawScanlineMode2(int lineNumber)
 inline void TinyMSX::drawScanlineMode3(int lineNumber)
 {
     // todo: draw Mode 3 characters
-    exit(3);
     drawSprites(lineNumber);
 }
 

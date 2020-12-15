@@ -32,3 +32,4 @@ void tinymsx_destroy(const void* context) { delete (TinyMSX*)context; }
 void tinymsx_reset(const void* context) { ((TinyMSX*)context)->reset(); }
 void tinymsx_tick(const void* context, unsigned char pad1, unsigned char pad2) { ((TinyMSX*)context)->tick(pad1, pad2); }
 unsigned short* tinymsx_display(const void* context) { return ((TinyMSX*)context)->display; }
+void* tinymsx_sound(const void* context, size_t* size) { return ((TinyMSX*)context)->getSoundBuffer(size); }
