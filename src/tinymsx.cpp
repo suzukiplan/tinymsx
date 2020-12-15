@@ -122,8 +122,25 @@ unsigned short TinyMSX::getInitAddr()
 void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
 {
     memset(&this->ir, 0, sizeof(this->ir));
-    this->pad[0] = pad1;
-    this->pad[1] = pad2;
+    this->pad[0] = 0;
+    this->pad[1] = 0;
+    switch (this->type) {
+        case TINYMSX_TYPE_SG1000:
+            this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0 : 0b00000001;
+            this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0 : 0b00000010;
+            this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0 : 0b00000100;
+            this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0 : 0b00001000;
+            this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0 : 0b00010000;
+            this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0 : 0b00100000;
+            this->pad[0] |= pad2 & TINYMSX_JOY_UP ? 0 : 0b01000000;
+            this->pad[0] |= pad2 & TINYMSX_JOY_DW ? 0 : 0b10000000;
+            this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0 : 0b00000001;
+            this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0 : 0b00000010;
+            this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0 : 0b00000100;
+            this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0 : 0b00001000;
+            this->pad[1] |= 0b11110000;
+            break;
+    }
     if (this->cpu) {
         this->cpu->execute(0x7FFFFFFF);
     }
