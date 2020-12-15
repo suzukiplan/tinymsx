@@ -82,13 +82,12 @@ void emu_reset()
  */
 void emu_vsync()
 {
-    if (!emu_initialized) return;
+    if (!emu_initialized || !emu_msx) return;
     tinymsx_tick(emu_msx, 0xFF, 0xFF);
     const void* ptr = tinymsx_display(emu_msx);
     memcpy(emu_vram, ptr, sizeof(emu_vram));
-    unsigned short pcm[1024];
-    size_t pcmSize = sizeof(pcm);
-    memset(pcm, 0, pcmSize);
+    size_t pcmSize;
+    void* pcm = tinymsx_sound(emu_msx, &pcmSize);
     pthread_mutex_lock(&sound_locker);
     if (pcmSize + sound_cursor < sizeof(sound_buffer)) {
         memcpy(&sound_buffer[sound_cursor], pcm, pcmSize);

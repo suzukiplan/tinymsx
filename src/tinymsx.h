@@ -40,6 +40,8 @@ class TinyMSX {
         unsigned char pad[2];
         unsigned char* rom;
         size_t romSize;
+        short soundBuffer[65536];
+        unsigned short soundBufferCursor;
     public:
         unsigned short display[256 * 192];
         unsigned short palette[16];
@@ -83,6 +85,7 @@ class TinyMSX {
         bool loadLogoFromMemory(void* logo, size_t size);
         void reset();
         void tick(unsigned char pad1, unsigned char pad2);
+        void* getSoundBuffer(size_t* size);
         void* quickSave(size_t* size);
         void quickLoad(void* data, size_t size);
         inline int getVideoMode() { return (vdp.reg[0] & 0b000000010) | (vdp.reg[1] & 0b00010000) >> 4 | (vdp.reg[1] & 0b000001000) >> 1; }
@@ -108,6 +111,7 @@ class TinyMSX {
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
         inline void psgCalc(short* left, short* right);
+        inline void psgExec(int clocks);
         inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
         inline void checkUpdateScanline();
