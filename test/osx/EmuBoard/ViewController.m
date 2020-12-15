@@ -132,7 +132,7 @@
             if (cp) *cp = '\0';
         }
         NSLog(@"loading game: %s", gameCode);
-        emu_reload(data.bytes, data.length, TINY_MSX_TYPE_SG1000);
+        emu_reload(data.bytes, data.length, TINYMSX_TYPE_SG1000);
         [weakSelf.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
         [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:panel.URL];
     }];

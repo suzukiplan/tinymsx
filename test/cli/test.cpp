@@ -91,9 +91,9 @@ int main(int argc, char* argv[])
     }
     int type;
     if (0 == strcmp(argv[1], "sg1000")) {
-        type = TINY_MSX_TYPE_SG1000;
+        type = TINYMSX_TYPE_SG1000;
     } else if (0 == strcmp(argv[1], "msx")) {
-        type = TINY_MSX_TYPE_MSX1;
+        type = TINYMSX_TYPE_MSX1;
     } else {
         usage();
         return 1;
@@ -112,8 +112,8 @@ int main(int argc, char* argv[])
     fseek(fp, 0, SEEK_SET);
     fread(rom, 1, romSize, fp);
     fclose(fp);
-    TinyMSX msx(type, rom, romSize, TINY_MSX_COLOR_MODE_RGB555);
-    if (TINY_MSX_TYPE_MSX1 == type) {
+    TinyMSX msx(type, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    if (TINYMSX_TYPE_MSX1 == type) {
         if (!msx.loadBiosFromFile("../../bios/cbios_main_msx1.rom")) {
             puts("load BIOS error");
             exit(-1);
