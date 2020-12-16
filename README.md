@@ -1,10 +1,14 @@
 # [WIP] TinyMSX
 
+|          Screenshot 1           |          Screenshot 2           |
+| :-----------------------------: | :-----------------------------: |
+| ![1](doc/image/screenshot1.png) | ![1](doc/image/screenshot2.png) |
+
 ## WIP status
 
 - [x] Emulate SG-1000
 - [x] Emulate Othello Multivision (note: some input port are ignored)
-- [ ] MSX cartridge games
+- [ ] Emulate MSX (cartridge games only and there are several restrictions)
 
 ## What is TinyMSX
 
