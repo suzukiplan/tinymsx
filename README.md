@@ -54,26 +54,34 @@ The goal of this project is to provide a minimal C/C++ library to provide a rang
 ```
 
 ```c
-    // Create an instance
-    void* msx = tinymsx_create(TINYMSX_TYPE_MSX1, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    void* msx;
+    unsigned short* display
+    size_t soundSize;
+    void* soundBuffer;
+    size_t stateSize;
+    const void* stateData;
 
-    // Reset
+    /* Create an instance */
+    msx = tinymsx_create(TINYMSX_TYPE_MSX1, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+
+    /* Reset */
     tinymsx_reset(msx);
 
-    // Execute 1 frame
+    /* Execute 1 frame */
     tinymsx_tick(msx, 0, 0);
 
-    // Get display buffer (256 x 192 x 2 bytes)
-    unsigned short* display = tinymsx_display(msx);
+    /* Get display buffer (256 x 192 x 2 bytes) */
+    display = tinymsx_display(msx);
 
-    // Get and clear the buffered audio data (44.1Hz/16bit/2ch) by tick execution.
-    size_t soundSize;
-    void* soundBuffer = tinymsx_sound(msx, &soundSize);
+    /* Get and clear the buffered audio data (44.1Hz/16bit/2ch) by tick execution. */
+    soundBuffer = tinymsx_sound(msx, &soundSize);
 
-    // State save (quick save)
-    size_t stateSize;
-    const void* stateData = tinymsx_save(msx, &stateSize);
+    /* State save (quick save) */
+    stateData = tinymsx_save(msx, &stateSize);
 
-    // State load (quick load)
+    /* State load (quick load) */
     tinymsx_load(msx, stateData, stateSize);
+
+    /* Destroy an instance */
+    tinymsx_destroy(msx);
 ```
