@@ -6,17 +6,17 @@
 //  Copyright © 2018年 SUZUKIPLAN. All rights reserved.
 //
 
-#import "VideoView.h"
-#import "VideoLayer.h"
 #import "EmuBoard.h"
+#import "VideoLayer.h"
+#import "VideoView.h"
 #import "constants.h"
 #import "tinymsx_def.h"
 #include <ctype.h>
 
-static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context);
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* context);
 extern unsigned char emu_key;
 
-@interface VideoView()
+@interface VideoView ()
 @property (nonatomic) VideoLayer* videoLayer;
 @property CVDisplayLinkRef displayLink;
 @property NSInteger score;
@@ -39,7 +39,7 @@ extern unsigned char emu_key;
         _videoLayer = [VideoLayer layer];
         [self setLayer:_videoLayer];
         CVDisplayLinkCreateWithActiveCGDisplays(&_displayLink);
-        CVDisplayLinkSetOutputCallback(_displayLink, MyDisplayLinkCallback, (__bridge void *)self);
+        CVDisplayLinkSetOutputCallback(_displayLink, MyDisplayLinkCallback, (__bridge void*)self);
         CVDisplayLinkStart(_displayLink);
     }
     return self;
@@ -76,7 +76,7 @@ extern unsigned char emu_key;
     return YES;
 }
 
-- (void)keyDown:(NSEvent *)event
+- (void)keyDown:(NSEvent*)event
 {
     unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
     //NSLog(@"keyDown: %04X", tolower(c));
@@ -92,7 +92,7 @@ extern unsigned char emu_key;
     }
 }
 
-- (void)keyUp:(NSEvent *)event
+- (void)keyUp:(NSEvent*)event
 {
     unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
     switch (tolower(c)) {
@@ -107,9 +107,9 @@ extern unsigned char emu_key;
     }
 }
 
-static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp *now, const CVTimeStamp *outputTime, CVOptionFlags flagsIn, CVOptionFlags *flagsOut, void *context)
+static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* context)
 {
-    [(__bridge VideoLayer *)context performSelectorOnMainThread:@selector(vsync) withObject:nil waitUntilDone:NO];
+    [(__bridge VideoLayer*)context performSelectorOnMainThread:@selector(vsync) withObject:nil waitUntilDone:NO];
     return kCVReturnSuccess;
 }
 
