@@ -35,3 +35,4 @@ unsigned short* tinymsx_display(const void* context) { return ((TinyMSX*)context
 void* tinymsx_sound(const void* context, size_t* size) { return ((TinyMSX*)context)->getSoundBuffer(size); }
 const void* tinymsx_save(const void* context, size_t* size) { return ((TinyMSX*)context)->saveState(size); }
 void tinymsx_load(const void* context, const void* data, size_t size) { ((TinyMSX*)context)->loadState(data, size); }
+unsigned short tinymsx_backdrop(const void* context) { return ((TinyMSX*)context)->getBackdropColor(); }

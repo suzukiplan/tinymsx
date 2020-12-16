@@ -2,7 +2,7 @@
 
 |          Screenshot 1           |          Screenshot 2           |
 | :-----------------------------: | :-----------------------------: |
-| ![1](doc/image/screenshot1.png) | ![1](doc/image/screenshot3.png) |
+| ![1](doc/image/screenshot1.png) | ![3](doc/image/screenshot3.png) |
 
 ## WIP status
 
