@@ -27,11 +27,14 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-#if 0
-    NSString* romFile = [[NSBundle mainBundle] pathForResource:@"battlekid" ofType:@"nes"];
-    _rom = [NSData dataWithContentsOfFile:romFile];
-    emu_init(_rom.bytes, (size_t)_rom.length, "battlekid");
-#endif
+    NSString* romFile = [[NSUserDefaults standardUserDefaults] objectForKey:@"previous_rom_file"];
+    if (romFile) {
+        NSLog(@"previous_rom_file: %@", romFile);
+        __weak ViewController* weakSelf = self;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf _openURL:[NSURL fileURLWithPath:romFile]];
+        });
+    }
     self.view.frame = CGRectMake(0, 0, VRAM_VIEW_WIDTH * 2, VRAM_VIEW_HEIGHT * 2);
     CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
@@ -144,6 +147,7 @@
     emu_reload(data.bytes, data.length, TINYMSX_TYPE_SG1000);
     [self.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
     [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:url];
+    [[NSUserDefaults standardUserDefaults] setObject:url.path forKey:@"previous_rom_file"];
 }
 
 - (BOOL)application:(AppDelegate*)app didOpenFile:(NSString*)file
