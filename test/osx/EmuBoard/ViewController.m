@@ -13,7 +13,7 @@
 #import "constants.h"
 #import "tinymsx_def.h"
 
-@interface ViewController () <NSWindowDelegate, VideoViewDelegate>
+@interface ViewController () <NSWindowDelegate, VideoViewDelegate, OpenFileDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
 @property (nonatomic) NSTextField* scoreView;
@@ -49,6 +49,7 @@
     _appDelegate.menu.autoenablesItems = NO;
     //_appDelegate.menu.item
     _appDelegate.menuQuickLoadFromMemory.enabled = NO;
+    _appDelegate.openFileDelegate = self;
     [self.view.window makeFirstResponder:_video];
 }
 
@@ -120,24 +121,35 @@
     __weak ViewController* weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         if (!result) return;
-        NSData* data = [NSData dataWithContentsOfURL:panel.URL];
-        if (!data) return;
-        char gameCode[16];
-        memset(gameCode, 0, sizeof(gameCode));
-        gameCode[0] = '\0';
-        const char* fileName = strrchr(panel.URL.path.UTF8String, '/');
-        if (fileName) {
-            while ('/' == *fileName || isdigit(*fileName)) fileName++;
-            if ('_' == *fileName) fileName++;
-            strncpy(gameCode, fileName, 15);
-            char* cp = strchr(gameCode, '.');
-            if (cp) *cp = '\0';
-        }
-        NSLog(@"loading game: %s", gameCode);
-        emu_reload(data.bytes, data.length, TINYMSX_TYPE_SG1000);
-        [weakSelf.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
-        [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:panel.URL];
+        [weakSelf _openURL:panel.URL];
     }];
+}
+
+- (void)_openURL:(NSURL*)url
+{
+    NSData* data = [NSData dataWithContentsOfURL:url];
+    if (!data) return;
+    char gameCode[16];
+    memset(gameCode, 0, sizeof(gameCode));
+    gameCode[0] = '\0';
+    const char* fileName = strrchr(url.path.UTF8String, '/');
+    if (fileName) {
+        while ('/' == *fileName || isdigit(*fileName)) fileName++;
+        if ('_' == *fileName) fileName++;
+        strncpy(gameCode, fileName, 15);
+        char* cp = strchr(gameCode, '.');
+        if (cp) *cp = '\0';
+    }
+    NSLog(@"loading game: %s", gameCode);
+    emu_reload(data.bytes, data.length, TINYMSX_TYPE_SG1000);
+    [self.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
+    [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:url];
+}
+
+- (BOOL)application:(AppDelegate*)app didOpenFile:(NSString*)file
+{
+    [self _openURL:[NSURL fileURLWithPath:file]];
+    return YES;
 }
 
 - (void)menuReset:(id)sender
