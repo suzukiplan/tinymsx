@@ -28,4 +28,13 @@
     return YES;
 }
 
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
+{
+    if (_openFileDelegate) {
+        return [_openFileDelegate application:self didOpenFile:filename];
+    } else {
+        return NO;
+    }
+}
+
 @end

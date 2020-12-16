@@ -6,6 +6,7 @@
 //  Copyright © 2018年 SUZUKIPLAN. All rights reserved.
 //
 
+#include <stdio.h>
 #include "constants.h"
 extern unsigned short emu_vram[VRAM_WIDTH * VRAM_HEIGHT];
 void emu_init(const void* rom, size_t romSize, int type);
