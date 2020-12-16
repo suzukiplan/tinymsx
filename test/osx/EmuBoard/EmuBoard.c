@@ -40,32 +40,43 @@ static void sound_callback(void* buffer, size_t size)
     pthread_mutex_unlock(&sound_locker);
 }
 
+static int getTypeOfRom(char* rom, size_t romSize)
+{
+    if (2 <= romSize && 'A' == rom[0] && 'B' == rom[1]) {
+        puts("open as MSX1 rom file");
+        return TINYMSX_TYPE_MSX1;
+    } else {
+        puts("open as SG-1000 rom file");
+        return TINYMSX_TYPE_SG1000;
+    }
+}
+
 /**
  * 起動時に1回だけ呼び出される
  */
-void emu_init(const void* rom, size_t romSize, int type)
+void emu_init(const void* rom, size_t romSize)
 {
     puts("emu_init");
     if (emu_initialized) return;
     printf("load rom (size: %lu)\n", romSize);
-    emu_msx = tinymsx_create(type, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
     tinymsx_reset(emu_msx);
     pthread_mutex_init(&sound_locker, NULL);
     spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
     emu_initialized = 1;
 }
 
-void emu_reload(const void* rom, size_t romSize, int type)
+void emu_reload(const void* rom, size_t romSize)
 {
     if (!emu_initialized) {
-        emu_init(rom, romSize, type);
+        emu_init(rom, romSize);
         return;
     }
     puts("emu_reload");
     if (emu_msx) {
         tinymsx_destroy(emu_msx);
     }
-    emu_msx = tinymsx_create(type, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
     tinymsx_reset(emu_msx);
 }
 
