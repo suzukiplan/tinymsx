@@ -2,9 +2,9 @@
 
 ## WIP status
 
-It's not even close to being a concept yet.
-I'm going to identify TODO while I'm building it.
-Since creating an MSX emulator first would result in a redundant configuration, it is envisioned that I will initially aim to develop SG-1000 emulation and then MSX binary compatible.
+- [x] Emulate SG-1000
+- [x] Emulate Othello Multivision (note: some input port are ignored)
+- [ ] MSX cartridge games
 
 ## What is TinyMSX
 
