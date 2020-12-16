@@ -43,7 +43,7 @@
     _video = [[VideoView alloc] initWithFrame:[self calcVramRect]];
     _video.delegate = self;
     [self.view addSubview:_video];
-    _scoreView = [[NSTextField alloc] initWithFrame:NSRectFromCGRect(CGRectMake(0, 0, 0, 0))];
+    //_scoreView = [[NSTextField alloc] initWithFrame:NSRectFromCGRect(CGRectMake(0, 0, 0, 0))];
     _scoreView.stringValue = @"SCORE:";
     [_scoreView sizeToFit];
     [self.view addSubview:_scoreView];
