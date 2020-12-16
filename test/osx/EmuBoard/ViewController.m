@@ -31,7 +31,7 @@
     if (romFile) {
         NSLog(@"previous_rom_file: %@", romFile);
         __weak ViewController* weakSelf = self;
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
             [weakSelf _openURL:[NSURL fileURLWithPath:romFile]];
         });
     }
