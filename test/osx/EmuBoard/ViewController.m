@@ -144,7 +144,7 @@
         if (cp) *cp = '\0';
     }
     NSLog(@"loading game: %s", gameCode);
-    emu_reload(data.bytes, data.length, TINYMSX_TYPE_SG1000);
+    emu_reload(data.bytes, data.length);
     [self.appDelegate.menuQuickLoadFromMemory setEnabled:NO];
     [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:url];
     [[NSUserDefaults standardUserDefaults] setObject:url.path forKey:@"previous_rom_file"];
