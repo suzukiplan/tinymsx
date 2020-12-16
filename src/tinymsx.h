@@ -90,6 +90,7 @@ class TinyMSX {
         const void* saveState(size_t* size);
         void loadState(const void* data, size_t size);
         inline int getVideoMode() { return (vdp.reg[0] & 0b000000010) | (vdp.reg[1] & 0b00010000) >> 4 | (vdp.reg[1] & 0b000001000) >> 1; }
+        inline unsigned short getBackdropColor() { return palette[vdp.reg[7] & 0b00001111]; }
         inline int getSlotNumber(int page) { return mem.slot[mem.page[page]] & 0b11; }
         inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
 
