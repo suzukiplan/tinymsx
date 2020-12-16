@@ -14,14 +14,15 @@
 
 @implementation AppDelegate
 
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+- (void)applicationDidFinishLaunching:(NSNotification*)aNotification
+{
 }
 
-
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
+- (void)applicationWillTerminate:(NSNotification*)aNotification
+{
 }
 
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)theApplication
 {
     // Windowを閉じたらアプリを終了させる
     return YES;

@@ -7,13 +7,13 @@
 //
 
 #import "AppDelegate.h"
-#import "ViewController.h"
-#import "VideoView.h"
-#import "constants.h"
 #import "EmuBoard.h"
+#import "VideoView.h"
+#import "ViewController.h"
+#import "constants.h"
 #import "tinymsx_def.h"
 
-@interface ViewController() <NSWindowDelegate, VideoViewDelegate>
+@interface ViewController () <NSWindowDelegate, VideoViewDelegate>
 @property (nonatomic, weak) AppDelegate* appDelegate;
 @property (nonatomic) VideoView* video;
 @property (nonatomic) NSTextField* scoreView;
@@ -24,7 +24,8 @@
 
 @implementation ViewController
 
-- (void)viewDidLoad {
+- (void)viewDidLoad
+{
     [super viewDidLoad];
 #if 0
     NSString* romFile = [[NSBundle mainBundle] pathForResource:@"battlekid" ofType:@"nes"];
@@ -32,7 +33,7 @@
     emu_init(_rom.bytes, (size_t)_rom.length, "battlekid");
 #endif
     self.view.frame = CGRectMake(0, 0, VRAM_VIEW_WIDTH * 2, VRAM_VIEW_HEIGHT * 2);
-    CALayer *layer = [CALayer layer];
+    CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
     [self.view setWantsLayer:YES];
     [self.view setLayer:layer];
@@ -56,7 +57,7 @@
     self.view.window.delegate = self;
 }
 
-- (void)windowDidResize:(NSNotification *)notification
+- (void)windowDidResize:(NSNotification*)notification
 {
     _video.frame = [self calcVramRect];
 }
@@ -85,9 +86,9 @@
     }
 }
 
-- (void)videoView:(VideoView *)view
-   didChangeScore:(NSInteger)score
-       isGameOver:(BOOL)isGameOver
+- (void)videoView:(VideoView*)view
+    didChangeScore:(NSInteger)score
+        isGameOver:(BOOL)isGameOver
 {
     __weak ViewController* weakSelf = self;
     NSString* scoreString;
@@ -115,7 +116,7 @@
     panel.canChooseDirectories = NO;
     panel.canCreateDirectories = YES;
     panel.canChooseFiles = YES;
-    panel.allowedFileTypes = @[@"rom", @"sg"];
+    panel.allowedFileTypes = @[ @"rom", @"sg" ];
     __weak ViewController* weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         if (!result) return;
@@ -144,12 +145,12 @@
     emu_reset();
 }
 
-- (void)windowDidEnterFullScreen:(NSNotification *)notification
+- (void)windowDidEnterFullScreen:(NSNotification*)notification
 {
     _isFullScreen = YES;
 }
 
-- (void)windowDidExitFullScreen:(NSNotification *)notification
+- (void)windowDidExitFullScreen:(NSNotification*)notification
 {
     _isFullScreen = NO;
 }

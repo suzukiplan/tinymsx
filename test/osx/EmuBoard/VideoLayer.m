@@ -6,9 +6,9 @@
 //  Copyright © 2018年 SUZUKIPLAN. All rights reserved.
 //
 
+#import "EmuBoard.h"
 #import "VideoLayer.h"
 #import "constants.h"
-#import "EmuBoard.h"
 
 static unsigned short imgbuf[2][VRAM_WIDTH * VRAM_HEIGHT];
 static CGContextRef img[2];
@@ -16,7 +16,7 @@ static volatile int bno;
 
 @implementation VideoLayer
 
-+ (id)defaultActionForKey:(NSString *)key
++ (id)defaultActionForKey:(NSString*)key
 {
     return nil;
 }
@@ -50,7 +50,7 @@ static volatile int bno;
             buf[i++] = emu_vram[ptr++];
         }
     }
-    CGImageRef cgImage = CGBitmapContextCreateImage(img[1-bno]);
+    CGImageRef cgImage = CGBitmapContextCreateImage(img[1 - bno]);
     self.contents = (__bridge id)cgImage;
     CFRelease(cgImage);
 }
