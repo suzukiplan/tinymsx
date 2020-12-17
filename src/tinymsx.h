@@ -56,8 +56,6 @@ class TinyMSX {
             unsigned char readBuffer;
         } vdp;
         struct SN76489 {
-            unsigned char levels[16];
-            unsigned int cycle;
             int b;
             int i;
             unsigned int r[8];
@@ -67,7 +65,10 @@ class TinyMSX {
             unsigned int ns;
             unsigned int nx;
         } sn76489;
+        
         struct AY8910 {
+            unsigned char latch;
+            unsigned char reserved[3];
             unsigned char reg[0x20];
             int b;
             int wav;
@@ -76,7 +77,29 @@ class TinyMSX {
             unsigned int freq[3];
             unsigned int edge[3];
             unsigned int baseCount;
+            struct AY8910Envelope {
+                unsigned int volume;
+                unsigned int ptr;
+                unsigned int face;
+                unsigned int cont;
+                unsigned int attack;
+                unsigned int alternate;
+                unsigned int hold;
+                unsigned int pause;
+                unsigned int reset;
+                unsigned int freq;
+                unsigned int count;
+                unsigned int reserved;
+            } env;
+            struct AY8910Noise {
+                unsigned int seed;
+                unsigned int count;
+                unsigned int freq;
+                unsigned int reserved;
+            } noise;
         } ay8910;
+        unsigned int psgClock;
+        unsigned char psgLevels[16];
         struct MemoryRegister {
             unsigned char page[4];
             unsigned char slot[4]; // E * * * - B B E E

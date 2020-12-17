@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#include "tinymsx_gw.h"
 #include "tinymsx.h"
+#include "tinymsx_gw.h"
 
 void* tinymsx_create(int type, const void* rom, size_t romSize, int colorMode) { return new TinyMSX(type, rom, romSize, colorMode); }
 void tinymsx_destroy(const void* context) { delete (TinyMSX*)context; }

@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#include <string.h>
 #include "tinymsx.h"
+#include <string.h>
 
 #define CPU_RATE 3579545
 #define SAMPLE_RATE 44100.0
@@ -41,7 +41,7 @@
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
-    unsigned int rgb[16] = { 0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF };
+    unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
     switch (colorMode) {
         case TINYMSX_COLOR_MODE_RGB555:
             for (int i = 0; i < 16; i++) {
@@ -93,24 +93,15 @@ void TinyMSX::reset()
     memset(&this->mem, 0, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->sn76489, 0, sizeof(this->sn76489));
-    this->sn76489.levels[0] = 255;
-    this->sn76489.levels[1] = 180;
-    this->sn76489.levels[2] = 127;
-    this->sn76489.levels[3] = 90;
-    this->sn76489.levels[4] = 63;
-    this->sn76489.levels[5] = 44;
-    this->sn76489.levels[6] = 31;
-    this->sn76489.levels[7] = 22;
-    this->sn76489.levels[8] = 15;
-    this->sn76489.levels[9] = 10;
-    this->sn76489.levels[10] = 7;
-    this->sn76489.levels[11] = 5;
-    this->sn76489.levels[12] = 3;
-    this->sn76489.levels[13] = 2;
-    this->sn76489.levels[14] = 1;
-    this->sn76489.levels[15] = 0;
-    this->sn76489.cycle = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
     memset(&this->ay8910, 0, sizeof(this->ay8910));
+    if (this->isSG1000()) {
+        unsigned char levels[16] = {255, 180, 127, 90, 63, 44, 31, 22, 15, 10, 7, 5, 3, 2, 1, 0};
+        memcpy(this->psgLevels, &levels, sizeof(levels));
+    } else if (this->isMSX1()) {
+        unsigned char levels[16] = {0, 1, 2, 3, 5, 7, 11, 15, 22, 31, 44, 63, 90, 127, 180, 255};
+        memcpy(this->psgLevels, &levels, sizeof(levels));
+    }
+    this->psgClock = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
 }
@@ -419,7 +410,7 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
     for (int i = 0; i < 3; i++) {
         int regidx = i << 1;
         if (this->sn76489.r[regidx]) {
-            unsigned int cc = this->sn76489.cycle + this->sn76489.c[i];
+            unsigned int cc = this->psgClock + this->sn76489.c[i];
             while ((cc & 0x80000000) == 0) {
                 cc -= (this->sn76489.r[regidx] << (PSG_SHIFT + 4));
                 sn76489.e[i] ^= 1;
@@ -430,7 +421,7 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
         }
     }
     if (sn76489.np) {
-        unsigned int cc = this->sn76489.cycle + this->sn76489.c[3];
+        unsigned int cc = this->psgClock + this->sn76489.c[3];
         while ((cc & 0x80000000) == 0) {
             cc -= (this->sn76489.np << (PSG_SHIFT + 4));
             this->sn76489.ns >>= 1;
@@ -444,10 +435,10 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
         this->sn76489.c[3] = cc;
     }
     int w = 0;
-    if (this->sn76489.e[0]) w += this->sn76489.levels[this->sn76489.r[1]];
-    if (this->sn76489.e[1]) w += this->sn76489.levels[this->sn76489.r[3]];
-    if (this->sn76489.e[2]) w += this->sn76489.levels[this->sn76489.r[5]];
-    if (this->sn76489.e[3]) w += this->sn76489.levels[this->sn76489.r[7]];
+    if (this->sn76489.e[0]) w += this->psgLevels[this->sn76489.r[1]];
+    if (this->sn76489.e[1]) w += this->psgLevels[this->sn76489.r[3]];
+    if (this->sn76489.e[2]) w += this->psgLevels[this->sn76489.r[5]];
+    if (this->sn76489.e[3]) w += this->psgLevels[this->sn76489.r[7]];
     w <<= 4;
     w = (short)w;
     w *= 45;
@@ -612,7 +603,7 @@ inline void TinyMSX::drawScanlineMode0(int lineNumber)
         this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
     }
     drawSprites(lineNumber);
-} 
+}
 
 inline void TinyMSX::drawScanlineMode2(int lineNumber)
 {
@@ -673,8 +664,7 @@ inline void TinyMSX::drawSprites(int lineNumber)
         0b00001000,
         0b00000100,
         0b00000010,
-        0b00000001
-    };
+        0b00000001};
     bool si = this->vdp.reg[1] & 0b00000010 ? true : false;
     bool mag = this->vdp.reg[1] & 0b00000001 ? true : false;
     int sa = (this->vdp.reg[5] & 0b01111111) << 7;

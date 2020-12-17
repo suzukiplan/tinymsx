@@ -6,15 +6,15 @@
 //  Copyright © 2018年 SUZUKIPLAN. All rights reserved.
 //
 
+#include "EmuBoard.h"
+#include "tinymsx_def.h"
+#include "tinymsx_gw.h"
+#include "vgsspu_al.h"
 #include <pthread.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "EmuBoard.h"
-#include "tinymsx_gw.h"
-#include "tinymsx_def.h"
-#include "vgsspu_al.h"
+#include <unistd.h>
 
 /**
  * この内容を書き換えればそれが画面に表示される
@@ -36,8 +36,10 @@ static void sound_callback(void* buffer, size_t size)
     while (sound_cursor < size / 2) usleep(100);
     pthread_mutex_lock(&sound_locker);
     memcpy(buffer, sound_buffer, size);
-    if (size <= sound_cursor) sound_cursor -= size;
-    else sound_cursor = 0;
+    if (size <= sound_cursor)
+        sound_cursor -= size;
+    else
+        sound_cursor = 0;
     pthread_mutex_unlock(&sound_locker);
 }
 
