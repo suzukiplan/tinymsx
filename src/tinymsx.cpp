@@ -92,30 +92,32 @@ void TinyMSX::reset()
     memset(&this->vdp, 0, sizeof(this->vdp));
     memset(&this->mem, 0, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
-    this->psgLevels[0] = 255;
-    this->psgLevels[1] = 180;
-    this->psgLevels[2] = 127;
-    this->psgLevels[3] = 90;
-    this->psgLevels[4] = 63;
-    this->psgLevels[5] = 44;
-    this->psgLevels[6] = 31;
-    this->psgLevels[7] = 22;
-    this->psgLevels[8] = 15;
-    this->psgLevels[9] = 10;
-    this->psgLevels[10] = 7;
-    this->psgLevels[11] = 5;
-    this->psgLevels[12] = 3;
-    this->psgLevels[13] = 2;
-    this->psgLevels[14] = 1;
-    this->psgLevels[15] = 0;
-    this->psgCycle = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
+    memset(&this->sn76489, 0, sizeof(this->sn76489));
+    this->sn76489.levels[0] = 255;
+    this->sn76489.levels[1] = 180;
+    this->sn76489.levels[2] = 127;
+    this->sn76489.levels[3] = 90;
+    this->sn76489.levels[4] = 63;
+    this->sn76489.levels[5] = 44;
+    this->sn76489.levels[6] = 31;
+    this->sn76489.levels[7] = 22;
+    this->sn76489.levels[8] = 15;
+    this->sn76489.levels[9] = 10;
+    this->sn76489.levels[10] = 7;
+    this->sn76489.levels[11] = 5;
+    this->sn76489.levels[12] = 3;
+    this->sn76489.levels[13] = 2;
+    this->sn76489.levels[14] = 1;
+    this->sn76489.levels[15] = 0;
+    this->sn76489.cycle = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
+    memset(&this->ay8910, 0, sizeof(this->ay8910));
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
 }
 
 unsigned short TinyMSX::getInitAddr()
 {
-#if 1
+#if 0
     return 0;
 #else
     if (this->isMSX1()) {
@@ -175,6 +177,13 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             return this->ram[addr & 0x1FFF];
         }
     } else if (this->isMSX1()) {
+#if 1
+        switch (addr / 0x4000) {
+            case 0: return this->bios.main[addr & 0x3FFF];
+            case 1: return this->rom[addr & 0x3FFF];
+            default: return this->ram[addr & 0x3FFF];
+        }
+#else
         if (0xFFFF == addr) {
             if (this->mem.slot[0] & 0x80) {
                 unsigned char result = 0;
@@ -207,6 +216,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
                 }
             default: return 0xFF;
         }
+#endif
     } else {
         return 0; // unknown system
     }
@@ -223,6 +233,9 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
             this->ram[addr & 0x1FFF] = value;
         }
     } else if (this->isMSX1()) {
+#if 1
+        this->ram[addr & 0x3FFF] = value;
+#else
         if (0xFFFF == addr) {
             for (int i = 0; i < 4; i++) {
                 this->mem.slot[i] &= 0b11110011;
@@ -239,6 +252,7 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         if (this->getSlotNumber(pn) == 2 && this->getExtSlotNumber(pn) == 0) {
             this->ram[addr] = value;
         }
+#endif
     }
 }
 
@@ -330,6 +344,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->vdpWriteAddress(value);
                 break;
             case 0xA0:
+                break;
             case 0xA1:
                 this->psgWrite(value);
                 break;
@@ -364,62 +379,75 @@ inline void TinyMSX::changeMemoryMap(int page, unsigned char map)
     this->mem.page[page & 3] = map;
 }
 
+inline void TinyMSX::psgLatch(unsigned char value)
+{
+    if (this->isMSX1()) {
+        // AY-3-8910
+    }
+}
+
 inline void TinyMSX::psgWrite(unsigned char value)
 {
-    if (value & 0x80) {
-        this->psg.i = (value >> 4) & 7;
-        this->psg.r[this->psg.i] = value & 0x0f;
+    if (this->isSG1000()) {
+        // SN76489
+        if (value & 0x80) {
+            this->sn76489.i = (value >> 4) & 7;
+            this->sn76489.r[this->sn76489.i] = value & 0x0f;
+        } else {
+            this->sn76489.r[this->sn76489.i] |= (value & 0x3f) << 4;
+        }
+        switch (this->sn76489.r[6] & 3) {
+            case 0: this->sn76489.np = 1; break;
+            case 1: this->sn76489.np = 2; break;
+            case 2: this->sn76489.np = 4; break;
+            case 3: this->sn76489.np = this->sn76489.r[4]; break;
+        }
+        this->sn76489.nx = (this->sn76489.r[6] & 0x04) ? 0x12000 : 0x08000;
     } else {
-        this->psg.r[this->psg.i] |= (value & 0x3f) << 4;
+        // AY-3-8910
     }
-    switch (this->psg.r[6] & 3) {
-        case 0: this->psg.np = 1; break;
-        case 1: this->psg.np = 2; break;
-        case 2: this->psg.np = 4; break;
-        case 3: this->psg.np = this->psg.r[4]; break;
-    }
-    this->psg.nx = (this->psg.r[6] & 0x04) ? 0x12000 : 0x08000;
 }
 
 inline unsigned char TinyMSX::psgRead()
 {
-    return 0; // TODO: PSG read data procedure
+    // TODO: need implement for AY-3-8910
+    return 0;
 }
 
-inline void TinyMSX::psgCalc(short* left, short* right)
+inline void TinyMSX::sn76489Calc(short* left, short* right)
 {
     for (int i = 0; i < 3; i++) {
         int regidx = i << 1;
-        if (this->psg.r[regidx]) {
-            unsigned int cc = this->psgCycle + this->psg.c[i];
+        if (this->sn76489.r[regidx]) {
+            unsigned int cc = this->sn76489.cycle + this->sn76489.c[i];
             while ((cc & 0x80000000) == 0) {
-                cc -= (this->psg.r[regidx] << (PSG_SHIFT + 4));
-                psg.e[i] ^= 1;
+                cc -= (this->sn76489.r[regidx] << (PSG_SHIFT + 4));
+                sn76489.e[i] ^= 1;
             }
-            psg.c[i] = cc;
+            sn76489.c[i] = cc;
         } else {
-            psg.e[i] = 1;
+            sn76489.e[i] = 1;
         }
     }
-    if (psg.np) {
-        unsigned int cc = this->psgCycle + this->psg.c[3];
+    if (sn76489.np) {
+        unsigned int cc = this->sn76489.cycle + this->sn76489.c[3];
         while ((cc & 0x80000000) == 0) {
-            cc -= (this->psg.np << (PSG_SHIFT + 4));
-            this->psg.ns >>= 1;
-            if (this->psg.ns & 1) {
-                this->psg.ns = this->psg.ns ^ this->psg.nx;
-                this->psg.e[3] = 1;
+            cc -= (this->sn76489.np << (PSG_SHIFT + 4));
+            this->sn76489.ns >>= 1;
+            if (this->sn76489.ns & 1) {
+                this->sn76489.ns = this->sn76489.ns ^ this->sn76489.nx;
+                this->sn76489.e[3] = 1;
             } else {
-                this->psg.e[3] = 0;
+                this->sn76489.e[3] = 0;
             }
         }
-        this->psg.c[3] = cc;
+        this->sn76489.c[3] = cc;
     }
     int w = 0;
-    if (this->psg.e[0]) w += this->psgLevels[this->psg.r[1]];
-    if (this->psg.e[1]) w += this->psgLevels[this->psg.r[3]];
-    if (this->psg.e[2]) w += this->psgLevels[this->psg.r[5]];
-    if (this->psg.e[3]) w += this->psgLevels[this->psg.r[7]];
+    if (this->sn76489.e[0]) w += this->sn76489.levels[this->sn76489.r[1]];
+    if (this->sn76489.e[1]) w += this->sn76489.levels[this->sn76489.r[3]];
+    if (this->sn76489.e[2]) w += this->sn76489.levels[this->sn76489.r[5]];
+    if (this->sn76489.e[3]) w += this->sn76489.levels[this->sn76489.r[7]];
     w <<= 4;
     w = (short)w;
     w *= 45;
@@ -433,13 +461,28 @@ inline void TinyMSX::psgCalc(short* left, short* right)
     *right = (short)w;
 }
 
+inline void TinyMSX::ay8910Calc(short* left, short* right)
+{
+    *left = 0;
+    *right = 0;
+}
+
 inline void TinyMSX::psgExec(int clocks)
 {
-    this->psg.b += clocks * SAMPLE_RATE;
-    while (0 <= this->psg.b) {
-        this->psg.b -= CPU_RATE;
-        psgCalc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
-        soundBufferCursor += 2;
+    if (this->isSG1000()) {
+        this->sn76489.b += clocks * SAMPLE_RATE;
+        while (0 <= this->sn76489.b) {
+            this->sn76489.b -= CPU_RATE;
+            sn76489Calc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
+            soundBufferCursor += 2;
+        }
+    } else if (this->isMSX1()) {
+        this->ay8910.b += clocks * SAMPLE_RATE;
+        while (0 <= this->ay8910.b) {
+            this->ay8910.b -= CPU_RATE;
+            ay8910Calc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
+            soundBufferCursor += 2;
+        }
     }
 }
 
@@ -797,7 +840,6 @@ inline void TinyMSX::drawSprites(int lineNumber)
 
 inline void TinyMSX::initBIOS()
 {
-    // 暫定的にC-BIOSで検証を進めるが、将来的にBIOSも独自実装に変更する
 }
 
 bool TinyMSX::loadSpecificSizeFile(const char* path, void* buffer, size_t size)
@@ -872,7 +914,11 @@ const void* TinyMSX::saveState(size_t* size)
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_CPU, sizeof(this->cpu->reg), &this->cpu->reg);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_RAM, this->calcAvairableRamSize(), this->ram);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp), &this->vdp);
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->psg), &this->psg);
+    if (this->isSG1000()) {
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->sn76489), &this->sn76489);
+    } else if (this->isMSX1()) {
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->ay8910), &this->ay8910);
+    }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_INT, sizeof(this->ir), &this->ir);
     *size = ptr;
@@ -898,7 +944,11 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_VDP, 2)) {
             memcpy(&this->vdp, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_PSG, 2)) {
-            memcpy(&this->psg, d, ds);
+            if (this->isSG1000()) {
+                memcpy(&this->sn76489, d, ds);
+            } else if (this->isMSX1()) {
+                memcpy(&this->ay8910, d, ds);
+            }
         } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
             memcpy(&this->mem, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_INT, 2)) {

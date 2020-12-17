@@ -10,6 +10,7 @@
 		1D0D90BA225440FB00FB9699 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D90B9225440FB00FB9699 /* vgsspu_al.c */; };
 		74AAA53225883DA9007192EF /* tinymsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74AAA52C25883DA9007192EF /* tinymsx.cpp */; };
 		74AAA53325883DA9007192EF /* tinymsx_gw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74AAA52F25883DA9007192EF /* tinymsx_gw.cpp */; };
+		74D911962589FD0D00A6069D /* cbios_main_msx1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74D911952589FD0D00A6069D /* cbios_main_msx1.rom */; };
 		94D1AB2A21D86ADC00DC595E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2921D86ADC00DC595E /* AppDelegate.m */; };
 		94D1AB2D21D86ADC00DC595E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2C21D86ADC00DC595E /* ViewController.m */; };
 		94D1AB2F21D86ADD00DC595E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 94D1AB2E21D86ADD00DC595E /* Assets.xcassets */; };
@@ -29,6 +30,7 @@
 		74AAA52F25883DA9007192EF /* tinymsx_gw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinymsx_gw.cpp; path = ../../../../src/tinymsx_gw.cpp; sourceTree = "<group>"; };
 		74AAA53025883DA9007192EF /* tinymsx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinymsx.h; path = ../../../../src/tinymsx.h; sourceTree = "<group>"; };
 		74AAA53125883DA9007192EF /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../../src/z80.hpp; sourceTree = "<group>"; };
+		74D911952589FD0D00A6069D /* cbios_main_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_main_msx1.rom; path = ../../../../bios/cbios_main_msx1.rom; sourceTree = "<group>"; };
 		94D1AB2521D86ADC00DC595E /* EmuBoard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmuBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D1AB2821D86ADC00DC595E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		94D1AB2921D86ADC00DC595E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -73,6 +75,14 @@
 			path = "tiny-msx";
 			sourceTree = "<group>";
 		};
+		74D911942589FCDA00A6069D /* bios */ = {
+			isa = PBXGroup;
+			children = (
+				74D911952589FD0D00A6069D /* cbios_main_msx1.rom */,
+			);
+			path = bios;
+			sourceTree = "<group>";
+		};
 		94D1AB1C21D86ADC00DC595E = {
 			isa = PBXGroup;
 			children = (
@@ -93,6 +103,7 @@
 		94D1AB2721D86ADC00DC595E /* EmuBoard */ = {
 			isa = PBXGroup;
 			children = (
+				74D911942589FCDA00A6069D /* bios */,
 				74AAA52B25883D81007192EF /* tiny-msx */,
 				94D1AB4221D8767900DC595E /* constants.h */,
 				94D1AB2821D86ADC00DC595E /* AppDelegate.h */,
@@ -183,6 +194,7 @@
 			files = (
 				94D1AB2F21D86ADD00DC595E /* Assets.xcassets in Resources */,
 				94D1AB3221D86ADD00DC595E /* Main.storyboard in Resources */,
+				74D911962589FD0D00A6069D /* cbios_main_msx1.rom in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
