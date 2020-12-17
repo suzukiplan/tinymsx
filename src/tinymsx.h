@@ -55,7 +55,9 @@ class TinyMSX {
             unsigned char latch;
             unsigned char readBuffer;
         } vdp;
-        struct ProgrammableSoundGenerator {
+        struct SN76489 {
+            unsigned char levels[16];
+            unsigned int cycle;
             int b;
             int i;
             unsigned int r[8];
@@ -64,9 +66,17 @@ class TinyMSX {
             unsigned int np;
             unsigned int ns;
             unsigned int nx;
-        } psg;
-        unsigned char psgLevels[16];
-        unsigned int psgCycle;
+        } sn76489;
+        struct AY8910 {
+            unsigned char reg[0x20];
+            int b;
+            int wav;
+            unsigned int count[3];
+            unsigned int volume[3];
+            unsigned int freq[3];
+            unsigned int edge[3];
+            unsigned int baseCount;
+        } ay8910;
         struct MemoryRegister {
             unsigned char page[4];
             unsigned char slot[4]; // E * * * - B B E E
@@ -110,9 +120,11 @@ class TinyMSX {
         inline void updateVdpAddress();
         inline void readVideoMemory();
         inline void updateVdpRegister();
+        inline void psgLatch(unsigned char value);
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
-        inline void psgCalc(short* left, short* right);
+        inline void sn76489Calc(short* left, short* right);
+        inline void ay8910Calc(short* left, short* right);
         inline void psgExec(int clocks);
         inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);

@@ -42,6 +42,7 @@ void* tinymsx_sound(const void* context, size_t* size);
 const void* tinymsx_save(const void* context, size_t* size);
 void tinymsx_load(const void* context, const void* data, size_t size);
 unsigned short tinymsx_backdrop(const void* context);
+void tinymsx_load_bios_msx1_main(const void* context, void* bios, size_t size);
 
 #ifdef __cplusplus
 };

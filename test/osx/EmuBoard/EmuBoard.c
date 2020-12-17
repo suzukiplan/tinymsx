@@ -20,6 +20,7 @@
  * この内容を書き換えればそれが画面に表示される
  * ※RGB565（16bit color）形式
  */
+char emu_msx_bios[0x8000];
 unsigned short emu_vram[256 * 192];
 unsigned char emu_key = 0;
 static void* spu;
@@ -60,6 +61,7 @@ void emu_init(const void* rom, size_t romSize)
     if (emu_initialized) return;
     printf("load rom (size: %lu)\n", romSize);
     emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    tinymsx_load_bios_msx1_main(emu_msx, emu_msx_bios, sizeof(emu_msx_bios));
     tinymsx_reset(emu_msx);
     pthread_mutex_init(&sound_locker, NULL);
     spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
@@ -77,6 +79,7 @@ void emu_reload(const void* rom, size_t romSize)
         tinymsx_destroy(emu_msx);
     }
     emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    tinymsx_load_bios_msx1_main(emu_msx, emu_msx_bios, sizeof(emu_msx_bios));
     tinymsx_reset(emu_msx);
 }
 

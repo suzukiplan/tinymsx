@@ -27,6 +27,11 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+
+    NSString* biosFile = [[NSBundle mainBundle] pathForResource:@"cbios_main_msx1" ofType:@"rom"];
+    NSData* bios = [NSData dataWithContentsOfFile:biosFile];
+    memcpy(emu_msx_bios, bios.bytes, bios.length);
+
     NSString* romFile = [[NSUserDefaults standardUserDefaults] objectForKey:@"previous_rom_file"];
     if (romFile) {
         NSLog(@"previous_rom_file: %@", romFile);
