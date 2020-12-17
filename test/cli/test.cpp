@@ -118,10 +118,6 @@ int main(int argc, char* argv[])
             puts("load BIOS error");
             exit(-1);
         }
-        if (!msx.loadLogoFromFile("../../bios/cbios_logo_msx1.rom")) {
-            puts("load LOGO error");
-            exit(-1);
-        }
     }
     msx.cpu->setDebugMessage([](void* arg, const char* msg) {
         static int count;
