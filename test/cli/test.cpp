@@ -128,18 +128,18 @@ int main(int argc, char* argv[])
         TinyMSX* msx = (TinyMSX*)arg;
         int pn = msx->cpu->reg.PC / 0x4000;
         printf("%08d %3d (VI:%02X) (%d-%d %d-%d, %d-%d, %d-%d) %s\n",
-            ++count,
-            msx->ir.lineNumber,
-            msx->getVideoMode(),
-            msx->getSlotNumber(0),
-            msx->getExtSlotNumber(0),
-            msx->getSlotNumber(1),
-            msx->getExtSlotNumber(1),
-            msx->getSlotNumber(2),
-            msx->getExtSlotNumber(2),
-            msx->getSlotNumber(3),
-            msx->getExtSlotNumber(3),
-            msg);
+               ++count,
+               msx->ir.lineNumber,
+               msx->getVideoMode(),
+               msx->getSlotNumber(0),
+               msx->getExtSlotNumber(0),
+               msx->getSlotNumber(1),
+               msx->getExtSlotNumber(1),
+               msx->getSlotNumber(2),
+               msx->getExtSlotNumber(2),
+               msx->getSlotNumber(3),
+               msx->getExtSlotNumber(3),
+               msg);
     });
 #if 0
     msx.cpu->addBreakPoint(0x4042, [](void* arg) {

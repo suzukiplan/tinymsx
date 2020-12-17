@@ -5,14 +5,14 @@
  *      Author: Yoji Suzuki (SUZUKI PLAN)
  *----------------------------------------------------------------------------
  */
-#include <pthread.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "vgsspu_al.h"
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
-#include "vgsspu_al.h"
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define kOutputBus 0
 #define kInputBus 1
@@ -75,13 +75,13 @@ void* vgsspu_start2(int sampling, int bit, int ch, size_t size, void (*callback)
     result->format = format;
     result->callback = callback;
     result->size = size;
-    
+
     if (init_al(&result->al)) {
         free(result->buffer);
         free(result);
         return NULL;
     }
-    
+
     result->alive = 1;
     if (pthread_create(&result->tid, NULL, sound_thread, result)) {
         free(result->buffer);
@@ -125,9 +125,9 @@ static void* sound_thread(void* context)
 {
     struct SPU* c = (struct SPU*)context;
     ALint st;
-    
+
     memset(c->buffer, 0, c->size);
-    
+
     while (c->alive) {
         alGetSourcei(c->al.sndASrc, AL_BUFFERS_QUEUED, &st);
         if (st < BUFNUM) {
@@ -172,7 +172,7 @@ static int init_al(struct AL* al)
         return -1;
     }
     al->alBufferDataStaticProc = (alBufferDataStaticProcPtr)alcGetProcAddress(NULL, (const ALCchar*)"alBufferDataStatic");
-    
+
     alGenSources(1, &(al->sndASrc));
     return 0;
 }
