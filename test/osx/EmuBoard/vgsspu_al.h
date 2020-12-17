@@ -7,6 +7,7 @@
  */
 #ifndef INCLUDE_VGSSPU_H
 #define INCLUDE_VGSSPU_H
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {

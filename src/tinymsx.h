@@ -65,19 +65,18 @@ class TinyMSX {
             unsigned int ns;
             unsigned int nx;
         } sn76489;
-        
         struct AY8910 {
-            unsigned char latch;
-            unsigned char reserved[3];
-            unsigned char reg[0x20];
             int b;
-            int wav;
+            unsigned char latch;
+            unsigned char tmask[3];
+            unsigned char nmask[3];
+            unsigned char reserved[5];
+            unsigned char reg[0x20];
             unsigned int count[3];
             unsigned int volume[3];
             unsigned int freq[3];
             unsigned int edge[3];
-            unsigned int baseCount;
-            struct AY8910Envelope {
+            struct Envelope {
                 unsigned int volume;
                 unsigned int ptr;
                 unsigned int face;
@@ -91,12 +90,13 @@ class TinyMSX {
                 unsigned int count;
                 unsigned int reserved;
             } env;
-            struct AY8910Noise {
+            struct Noise {
                 unsigned int seed;
                 unsigned int count;
                 unsigned int freq;
                 unsigned int reserved;
             } noise;
+            short ch_out[4];
         } ay8910;
         unsigned int psgClock;
         unsigned char psgLevels[16];

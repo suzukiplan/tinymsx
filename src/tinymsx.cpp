@@ -100,6 +100,10 @@ void TinyMSX::reset()
     } else if (this->isMSX1()) {
         unsigned char levels[16] = {0, 1, 2, 3, 5, 7, 11, 15, 22, 31, 44, 63, 90, 127, 180, 255};
         memcpy(this->psgLevels, &levels, sizeof(levels));
+        for (int i = 0; i < 3; i++) this->ay8910.count[i] = 0x1000;
+        this->ay8910.noise.seed = 0xffff;
+        this->ay8910.noise.count = 0x40;
+        this->ay8910.env.pause = 1;
     }
     this->psgClock = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
@@ -335,6 +339,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->vdpWriteAddress(value);
                 break;
             case 0xA0:
+                this->psgLatch(value);
                 break;
             case 0xA1:
                 this->psgWrite(value);
@@ -373,7 +378,7 @@ inline void TinyMSX::changeMemoryMap(int page, unsigned char map)
 inline void TinyMSX::psgLatch(unsigned char value)
 {
     if (this->isMSX1()) {
-        // AY-3-8910
+        this->ay8910.latch = value & 0x1F;
     }
 }
 
@@ -396,13 +401,42 @@ inline void TinyMSX::psgWrite(unsigned char value)
         this->sn76489.nx = (this->sn76489.r[6] & 0x04) ? 0x12000 : 0x08000;
     } else {
         // AY-3-8910
+        static unsigned char mask[16] = {0xff, 0x0f, 0xff, 0x0f, 0xff, 0x0f, 0x1f, 0x3f, 0x1f, 0x1f, 0x1f, 0xff, 0xff, 0x0f, 0xff, 0xff};
+        int reg = this->ay8910.latch;
+        value &= mask[reg];
+        this->ay8910.reg[reg] = value;
+        if (reg < 6) {
+            int c = reg >> 1;
+            this->ay8910.freq[c] = ((this->ay8910.reg[c * 2 + 1] & 15) << 8) + this->ay8910.reg[c * 2];
+        } else if (6 == reg) {
+            this->ay8910.noise.freq = (value & 0x1F) << 1;
+        } else if (7 == reg) {
+            this->ay8910.tmask[0] = value & 1;
+            this->ay8910.tmask[1] = value & 2;
+            this->ay8910.tmask[2] = value & 4;
+            this->ay8910.nmask[0] = value & 8;
+            this->ay8910.nmask[1] = value & 16;
+            this->ay8910.nmask[2] = value & 32;
+        } else if (reg < 11) {
+            this->ay8910.volume[reg - 8] = value << 1;
+        } else if (reg < 13) {
+            this->ay8910.env.freq = (this->ay8910.reg[12] << 8) + this->ay8910.reg[11];
+        } else if (13 == reg) {
+            this->ay8910.env.cont = (value >> 3) & 1;
+            this->ay8910.env.attack = (value >> 2) & 1;
+            this->ay8910.env.alternate = (value >> 1) & 1;
+            this->ay8910.env.hold = value & 1;
+            this->ay8910.env.face = this->ay8910.env.attack;
+            this->ay8910.env.pause = 0;
+            this->ay8910.env.count = 0x10000 - this->ay8910.env.freq;
+            this->ay8910.env.ptr = this->ay8910.env.face ? 0 : 0x1F;
+        }
     }
 }
 
 inline unsigned char TinyMSX::psgRead()
 {
-    // TODO: need implement for AY-3-8910
-    return 0;
+    return this->isMSX1() ? this->ay8910.reg[this->ay8910.latch] : 0;
 }
 
 inline void TinyMSX::sn76489Calc(short* left, short* right)
@@ -413,14 +447,14 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
             unsigned int cc = this->psgClock + this->sn76489.c[i];
             while ((cc & 0x80000000) == 0) {
                 cc -= (this->sn76489.r[regidx] << (PSG_SHIFT + 4));
-                sn76489.e[i] ^= 1;
+                this->sn76489.e[i] ^= 1;
             }
-            sn76489.c[i] = cc;
+            this->sn76489.c[i] = cc;
         } else {
-            sn76489.e[i] = 1;
+            this->sn76489.e[i] = 1;
         }
     }
-    if (sn76489.np) {
+    if (this->sn76489.np) {
         unsigned int cc = this->psgClock + this->sn76489.c[3];
         while ((cc & 0x80000000) == 0) {
             cc -= (this->sn76489.np << (PSG_SHIFT + 4));
@@ -454,8 +488,71 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
 
 inline void TinyMSX::ay8910Calc(short* left, short* right)
 {
-    *left = 0;
-    *right = 0;
+    static const int incr = 4;
+
+    // Envelope
+    this->ay8910.env.count += incr;
+    while (this->ay8910.env.count >= 0x10000 && this->ay8910.env.freq != 0) {
+        if (!this->ay8910.env.pause) {
+            if (this->ay8910.env.face) {
+                this->ay8910.env.ptr = (this->ay8910.env.ptr + 1) & 0x3f;
+            }else {
+                this->ay8910.env.ptr = (this->ay8910.env.ptr + 0x3f) & 0x3f;
+            }
+        }
+        if (this->ay8910.env.ptr & 0x20) {
+            if (this->ay8910.env.cont) {
+                if (this->ay8910.env.alternate ^ this->ay8910.env.hold) this->ay8910.env.face ^= 1;
+                if (this->ay8910.env.hold) this->ay8910.env.pause = 1;
+                this->ay8910.env.ptr = this->ay8910.env.face ? 0 : 0x1f;
+            } else {
+                this->ay8910.env.pause = 1;
+                this->ay8910.env.ptr = 0;
+            }
+        }
+        this->ay8910.env.count -= this->ay8910.env.freq;
+    }
+
+    // Noise
+    this->ay8910.noise.count += incr;
+    if (this->ay8910.noise.count & 0x40) {
+        if (this->ay8910.noise.seed & 1) {
+            this->ay8910.noise.seed ^= 0x24000;
+        }
+        this->ay8910.noise.seed >>= 1;
+        this->ay8910.noise.count -= this->ay8910.noise.freq ? this->ay8910.noise.freq : (1 << 1);
+    }
+    int noise = this->ay8910.noise.seed & 1;
+
+    // Tone
+    for (int i = 0; i < 3; i++) {
+        this->ay8910.count[i] += incr;
+        if (this->ay8910.count[i] & 0x1000) {
+            if (this->ay8910.freq[i] > 1) {
+                this->ay8910.edge[i] = !this->ay8910.edge[i];
+                this->ay8910.count[i] -= this->ay8910.freq[i];
+            } else {
+                this->ay8910.edge[i] = 1;
+            }
+        }
+        if ((this->ay8910.tmask[i] || this->ay8910.edge[i]) && (this->ay8910.nmask[i] || noise)) {
+            if (!(this->ay8910.volume[i] & 32)) {
+                this->ay8910.ch_out[i] += (this->psgLevels[this->ay8910.volume[i] & 31] << 4);
+            } else {
+                this->ay8910.ch_out[i] += (this->psgLevels[this->ay8910.env.ptr] << 4);
+            }
+        }
+        this->ay8910.ch_out[i] >>= 1;
+    }
+
+    int w = 0;
+    w += this->ay8910.ch_out[0];
+    w += this->ay8910.ch_out[1];
+    w += this->ay8910.ch_out[2];
+    if (32767 < w) w = 32767;
+    if (w < -32768) w = -32768;
+    *left = (short)w;
+    *right = (short)w;
 }
 
 inline void TinyMSX::psgExec(int clocks)
@@ -464,15 +561,15 @@ inline void TinyMSX::psgExec(int clocks)
         this->sn76489.b += clocks * SAMPLE_RATE;
         while (0 <= this->sn76489.b) {
             this->sn76489.b -= CPU_RATE;
-            sn76489Calc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
-            soundBufferCursor += 2;
+            this->sn76489Calc(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+            this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
         this->ay8910.b += clocks * SAMPLE_RATE;
         while (0 <= this->ay8910.b) {
             this->ay8910.b -= CPU_RATE;
-            ay8910Calc(&soundBuffer[soundBufferCursor], &soundBuffer[soundBufferCursor + 1]);
-            soundBufferCursor += 2;
+            this->ay8910Calc(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+            this->soundBufferCursor += 2;
         }
     }
 }
