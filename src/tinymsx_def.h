@@ -40,5 +40,7 @@
 #define TINYMSX_JOY_RI 0b00001000
 #define TINYMSX_JOY_T1 0b00010000
 #define TINYMSX_JOY_T2 0b00100000
+#define TINYMSX_JOY_S1 0b01000000 // special key
+#define TINYMSX_JOY_S2 0b10000000 // special key
 
 #endif

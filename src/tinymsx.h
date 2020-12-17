@@ -38,6 +38,8 @@ class TinyMSX {
         } bios;
         int type;
         unsigned char pad[2];
+        unsigned char specialKeyX[2];
+        unsigned char specialKeyY[2];
         unsigned char* rom;
         size_t romSize;
         short soundBuffer[65536];
@@ -103,6 +105,7 @@ class TinyMSX {
         struct MemoryRegister {
             unsigned char page[4];
             unsigned char slot[4]; // E * * * - B B E E
+            unsigned char portAA; // keyboard position
         } mem;
         struct InternalRegister {
             int frameClock;
@@ -117,6 +120,8 @@ class TinyMSX {
         bool loadBiosFromMemory(void* bios, size_t size);
         bool loadLogoFromFile(const char* path);
         bool loadLogoFromMemory(void* logo, size_t size);
+        void setupSpecialKey1(unsigned char ascii, bool isTenKey = false);
+        void setupSpecialKey2(unsigned char ascii, bool isTenKey = false);
         void reset();
         void tick(unsigned char pad1, unsigned char pad2);
         void* getSoundBuffer(size_t* size);
@@ -128,6 +133,11 @@ class TinyMSX {
         inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
 
     private:
+        inline void setupSpecialKeyV(int n, int x, int y) {
+            this->specialKeyX[n] = x;
+            this->specialKeyY[n] = y;
+        }
+        void setupSpecialKey(int n, unsigned char ascii, bool isTenKey);
         inline void initBIOS();
         inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }

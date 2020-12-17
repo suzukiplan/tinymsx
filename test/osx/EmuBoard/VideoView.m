@@ -89,6 +89,8 @@ extern unsigned char emu_key;
         case 0x0020: emu_key |= TINYMSX_JOY_T1; break;
         case 0x0078: emu_key |= TINYMSX_JOY_T2; break;
         case 0x007A: emu_key |= TINYMSX_JOY_T1; break;
+        case 0x0031: emu_key |= TINYMSX_JOY_S1; break;
+        case 0x0032: emu_key |= TINYMSX_JOY_S2; break;
     }
 }
 
@@ -104,6 +106,8 @@ extern unsigned char emu_key;
         case 0x0020: emu_key &= ~TINYMSX_JOY_T1; break;
         case 0x0078: emu_key &= ~TINYMSX_JOY_T2; break;
         case 0x007A: emu_key &= ~TINYMSX_JOY_T1; break;
+        case 0x0031: emu_key &= ~TINYMSX_JOY_S1; break;
+        case 0x0032: emu_key &= ~TINYMSX_JOY_S2; break;
     }
 }
 

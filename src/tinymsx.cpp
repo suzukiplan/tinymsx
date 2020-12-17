@@ -144,6 +144,22 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
             this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0 : 0b00001000;
             this->pad[1] |= 0b11110000;
             break;
+        case TINYMSX_TYPE_MSX1:
+            this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0b00001000 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_S1 ? 0b01000000 : 0;
+            this->pad[0] |= pad1 & TINYMSX_JOY_S2 ? 0b10000000 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_UP ? 0b00000001 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_DW ? 0b00000010 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0b00000100 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0b00001000 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
+            this->pad[1] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+            break;
     }
     if (this->cpu) {
         this->cpu->execute(0x7FFFFFFF);
@@ -251,6 +267,54 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
     }
 }
 
+void TinyMSX::setupSpecialKey1(unsigned char ascii, bool isTenKey) { this->setupSpecialKey(0, ascii, isTenKey); }
+void TinyMSX::setupSpecialKey2(unsigned char ascii, bool isTenKey) { this->setupSpecialKey(1, ascii, isTenKey); }
+
+void TinyMSX::setupSpecialKey(int n, unsigned char ascii, bool isTenKey)
+{
+    if (isTenKey) {
+        switch (ascii) {
+            case '*': this->setupSpecialKeyV(n, 0, 9); break;
+            case '+': this->setupSpecialKeyV(n, 1, 9); break;
+            case '/': this->setupSpecialKeyV(n, 2, 9); break;
+            case '0': this->setupSpecialKeyV(n, 3, 9); break;
+            case '1': this->setupSpecialKeyV(n, 4, 9); break;
+            case '2': this->setupSpecialKeyV(n, 5, 9); break;
+            case '3': this->setupSpecialKeyV(n, 6, 9); break;
+            case '4': this->setupSpecialKeyV(n, 7, 9); break;
+            case '5': this->setupSpecialKeyV(n, 0, 10); break;
+            case '6': this->setupSpecialKeyV(n, 1, 10); break;
+            case '7': this->setupSpecialKeyV(n, 2, 10); break;
+            case '8': this->setupSpecialKeyV(n, 3, 10); break;
+            case '9': this->setupSpecialKeyV(n, 4, 10); break;
+            case '-': this->setupSpecialKeyV(n, 5, 10); break;
+            case ',': this->setupSpecialKeyV(n, 6, 10); break;
+            case '.': this->setupSpecialKeyV(n, 7, 10); break;
+            default: this->setupSpecialKeyV(n, 255, 255); break;
+        }
+    } else {
+        switch (isalpha(ascii) ? toupper(ascii) : ascii) {
+            case '0': this->setupSpecialKeyV(n, 0, 0); break;
+            case '1': this->setupSpecialKeyV(n, 1, 0); break;
+            case '2': this->setupSpecialKeyV(n, 2, 0); break;
+            case '3': this->setupSpecialKeyV(n, 3, 0); break;
+            case '4': this->setupSpecialKeyV(n, 4, 0); break;
+            case '5': this->setupSpecialKeyV(n, 5, 0); break;
+            case '6': this->setupSpecialKeyV(n, 6, 0); break;
+            case '7': this->setupSpecialKeyV(n, 7, 0); break;
+            case '8': this->setupSpecialKeyV(n, 0, 1); break;
+            case '9': this->setupSpecialKeyV(n, 1, 1); break;
+            case '-': this->setupSpecialKeyV(n, 2, 1); break;
+            case '^': this->setupSpecialKeyV(n, 3, 1); break;
+            case '\\': this->setupSpecialKeyV(n, 4, 1); break;
+            case '@': this->setupSpecialKeyV(n, 5, 1); break;
+            case '[': this->setupSpecialKeyV(n, 6, 1); break;
+            case '+': this->setupSpecialKeyV(n, 7, 1); break;
+            default: this->setupSpecialKeyV(n, 255, 255); break;
+        }
+    }
+}
+
 inline unsigned char TinyMSX::inPort(unsigned char port)
 {
     if (this->isSG1000()) {
@@ -279,12 +343,6 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
         }
     } else if (this->isMSX1()) {
         switch (port) {
-            case 0xC0:
-            case 0xDC:
-                return this->pad[0];
-            case 0xC1:
-            case 0xDD:
-                return this->pad[1];
             case 0x98:
                 return this->vdpReadData();
             case 0x99:
@@ -299,8 +357,30 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 result |= (this->mem.slot[0] & 0b00000011);
                 return result;
             }
-            case 0xA9: // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
-                return 0xFF;
+            case 0xA9: {
+                // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
+                static unsigned char bit[8] = {
+                    0b00000001,
+                    0b00000010,
+                    0b00000100,
+                    0b00001000,
+                    0b00010000,
+                    0b00100000,
+                    0b01000000,
+                    0b10000000};
+                unsigned char result = 0;
+                if (this->pad[0] & 0b01000000) {
+                    if ((this->mem.portAA & 0x0F) == this->specialKeyY[0]) {
+                        result |= bit[this->specialKeyX[0]];
+                    }
+                }
+                if (this->pad[0] & 0b10000000) {
+                    if ((this->mem.portAA & 0x0F) == this->specialKeyY[1]) {
+                        result |= bit[this->specialKeyX[1]];
+                    }
+                }
+                return ~result;
+            }
             default:
                 printf("unknown input port $%02X\n", port);
                 exit(-1);
@@ -356,6 +436,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 break;
             }
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
+                this->mem.portAA = value;
                 break;
             case 0xAB: // to access the ports control register. (Write only)
                 break;
@@ -436,7 +517,14 @@ inline void TinyMSX::psgWrite(unsigned char value)
 
 inline unsigned char TinyMSX::psgRead()
 {
-    return this->isMSX1() ? this->ay8910.reg[this->ay8910.latch] : 0;
+    if (this->isMSX1()) {
+        switch (this->ay8910.latch) {
+            case 0x0E: return ~(this->pad[0] & 0x3F);
+            case 0x0F: return ~(this->pad[1] & 0x3F);
+            default: return this->ay8910.reg[this->ay8910.latch];
+        }
+    }
+    return 0xFF;
 }
 
 inline void TinyMSX::sn76489Calc(short* left, short* right)
@@ -496,7 +584,7 @@ inline void TinyMSX::ay8910Calc(short* left, short* right)
         if (!this->ay8910.env.pause) {
             if (this->ay8910.env.face) {
                 this->ay8910.env.ptr = (this->ay8910.env.ptr + 1) & 0x3f;
-            }else {
+            } else {
                 this->ay8910.env.ptr = (this->ay8910.env.ptr + 0x3f) & 0x3f;
             }
         }
