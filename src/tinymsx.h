@@ -157,7 +157,7 @@ class TinyMSX {
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
         inline void sn76489Calc(short* left, short* right);
-        inline void ay8910Calc(short* left, short* right);
+        inline short ay8910Calc();
         inline void psgExec(int clocks);
         inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
