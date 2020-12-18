@@ -577,7 +577,7 @@ inline void TinyMSX::sn76489Calc(short* left, short* right)
 inline short TinyMSX::ay8910Calc()
 {
     // Envelope
-    this->ay8910.env.count += 4;
+    this->ay8910.env.count += 5;
     while (this->ay8910.env.count >= 0x10000 && this->ay8910.env.freq != 0) {
         if (!this->ay8910.env.pause) {
             if (this->ay8910.env.face) {
@@ -600,7 +600,7 @@ inline short TinyMSX::ay8910Calc()
     }
 
     // Noise
-    this->ay8910.noise.count += 4;
+    this->ay8910.noise.count += 5;
     if (this->ay8910.noise.count & 0x40) {
         if (this->ay8910.noise.seed & 1) {
             this->ay8910.noise.seed ^= 0x24000;
@@ -612,7 +612,7 @@ inline short TinyMSX::ay8910Calc()
 
     // Tone
     for (int i = 0; i < 3; i++) {
-        this->ay8910.count[i] += 4;
+        this->ay8910.count[i] += 5;
         if (this->ay8910.count[i] & 0x1000) {
             if (this->ay8910.freq[i] > 1) {
                 this->ay8910.edge[i] = !this->ay8910.edge[i];
@@ -644,9 +644,10 @@ inline void TinyMSX::psgExec(int clocks)
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
-        this->ay8910.b += clocks * SAMPLE_RATE;
-        while (0 <= this->ay8910.b) {
-            this->ay8910.b -= CPU_RATE;
+        static const int interval = CPU_RATE * 256.0 / SAMPLE_RATE / 4.0 * 3.5;
+        this->ay8910.clocks += clocks << 8;
+        while (interval <= this->ay8910.clocks) {
+            this->ay8910.clocks -= interval;
             short w = this->ay8910Calc();
             this->soundBuffer[this->soundBufferCursor++] = w;
             this->soundBuffer[this->soundBufferCursor++] = w;

@@ -68,7 +68,7 @@ class TinyMSX {
             unsigned int nx;
         } sn76489;
         struct AY8910 {
-            int b;
+            int clocks;
             unsigned char latch;
             unsigned char tmask[3];
             unsigned char nmask[3];
