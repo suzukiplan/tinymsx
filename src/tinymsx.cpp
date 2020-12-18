@@ -644,7 +644,7 @@ inline void TinyMSX::psgExec(int clocks)
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
-        static const int interval = CPU_RATE * 256.0 / SAMPLE_RATE / 4.0 * 3.5;
+        static const int interval = CPU_RATE * 256.0 / SAMPLE_RATE * (32.0 / 44.1);
         this->ay8910.clocks += clocks << 8;
         while (interval <= this->ay8910.clocks) {
             this->ay8910.clocks -= interval;
