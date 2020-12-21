@@ -30,6 +30,7 @@
 #include "z80.hpp"
 #include "tinymsx_def.h"
 #include "msxslot.hpp"
+#include "tms9918a.hpp"
 
 class TinyMSX {
     private:
@@ -47,17 +48,7 @@ class TinyMSX {
         unsigned short soundBufferCursor;
         unsigned char tmpBuffer[1024 * 1024];
     public:
-        unsigned short display[256 * 192];
-        unsigned short palette[16];
-        struct VideoDisplayProcessor {
-            unsigned char ram[0x4000];
-            unsigned char reg[8];
-            unsigned char tmpAddr[2];
-            unsigned short addr;
-            unsigned char stat;
-            unsigned char latch;
-            unsigned char readBuffer;
-        } vdp;
+        TMS9918A vdp;
         struct SN76489 {
             int b;
             int i;
@@ -108,11 +99,6 @@ class TinyMSX {
             unsigned char slot[4]; // E * * * - B B E E
             unsigned char portAA; // keyboard position
         } mem;
-        struct InternalRegister {
-            int frameClock;
-            int lineClock;
-            int lineNumber;
-        } ir;
         unsigned char ram[0x4000];
         MsxSlot slots;
         Z80* cpu;
@@ -129,8 +115,6 @@ class TinyMSX {
         void* getSoundBuffer(size_t* size);
         const void* saveState(size_t* size);
         void loadState(const void* data, size_t size);
-        inline int getVideoMode() { return (vdp.reg[0] & 0b000000010) | (vdp.reg[1] & 0b00010000) >> 4 | (vdp.reg[1] & 0b000001000) >> 1; }
-        inline unsigned short getBackdropColor() { return palette[vdp.reg[7] & 0b00001111]; }
         inline int getSlotNumber(int page) { return mem.slot[mem.page[page]] & 0b11; }
         inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
 
@@ -149,13 +133,6 @@ class TinyMSX {
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
-        inline unsigned char vdpReadData();
-        inline unsigned char vdpReadStatus();
-        inline void vdpWriteData(unsigned char value);
-        inline void vdpWriteAddress(unsigned char value);
-        inline void updateVdpAddress();
-        inline void readVideoMemory();
-        inline void updateVdpRegister();
         inline void psgLatch(unsigned char value);
         inline void psgWrite(unsigned char value);
         inline unsigned char psgRead();
@@ -164,13 +141,6 @@ class TinyMSX {
         inline void psgExec(int clocks);
         inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
-        inline void checkUpdateScanline();
-        inline void drawScanline(int lineNumber);
-        inline void drawScanlineMode0(int lineNumber);
-        inline void drawScanlineMode2(int lineNumber);
-        inline void drawScanlineMode3(int lineNumber);
-        inline void drawEmptyScanline(int lineNumber);
-        inline void drawSprites(int lineNumber);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
         size_t calcAvairableRamSize();
 };
