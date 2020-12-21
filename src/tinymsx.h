@@ -54,8 +54,6 @@ class TinyMSX {
         SN76489 sn76489;
         AY8910 ay8910;
         struct MemoryRegister {
-            unsigned char page[4];
-            unsigned char slot[4]; // E * * * - B B E E
             unsigned char portAA; // keyboard position
         } mem;
         unsigned char ram[0x4000];
@@ -74,8 +72,6 @@ class TinyMSX {
         void* getSoundBuffer(size_t* size);
         const void* saveState(size_t* size);
         void loadState(const void* data, size_t size);
-        inline int getSlotNumber(int page) { return mem.slot[mem.page[page]] & 0b11; }
-        inline int getExtSlotNumber(int page) { return (mem.slot[mem.page[page]] & 0b1100) >> 2; }
 
     private:
         inline void setupSpecialKeyV(int n, int x, int y) {
@@ -93,7 +89,6 @@ class TinyMSX {
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
         inline void psgExec(int clocks);
-        inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
         size_t calcAvairableRamSize();
