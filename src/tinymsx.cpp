@@ -181,7 +181,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             return this->ram[addr & 0x1FFF];
         }
     } else if (this->isMSX1()) {
-        return 0xFFFF == addr ? this->slots.readExtraStatus() : this->slots.read(addr);
+        return 0xFFFF == addr ? this->slots.readSecondaryStatus() : this->slots.read(addr);
     } else {
         return 0; // unknown system
     }
