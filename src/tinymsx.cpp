@@ -90,14 +90,14 @@ void TinyMSX::reset()
         if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
         //this->slots.add(3, 0, this->bios.logo, true);
         this->slots.add(3, 3, this->ram, false);
-        this->slots.setupPage(0, 0);
-        this->slots.setupPage(1, 1);
-        this->slots.setupPage(2, 1);
-        this->slots.setupPage(3, 3);
-        this->slots.setupSlot(0, 0b10000000);
-        this->slots.setupSlot(1, 0b10000001);
-        this->slots.setupSlot(2, 0b10000001);
-        this->slots.setupSlot(3, 0b10001111);
+        this->slots.setupPage(0, 0);          // page 0 = slot 0
+        this->slots.setupPage(1, 1);          // page 1 = slot 1
+        this->slots.setupPage(2, 1);          // page 2 = slot 2
+        this->slots.setupPage(3, 3);          // page 3 = slot 3
+        this->slots.setupSlot(0, 0b10000000); // slot 0 = slot 0-0
+        this->slots.setupSlot(1, 0b10000001); // slot 1 = slot 1-0
+        this->slots.setupSlot(2, 0b10000101); // slot 2 = slot 1-1
+        this->slots.setupSlot(3, 0b10001111); // slot 3 = slot 3-3
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
