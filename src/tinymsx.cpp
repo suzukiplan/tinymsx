@@ -38,30 +38,12 @@
 #define STATE_CHUNK_MEM "MR"
 #define STATE_CHUNK_INT "IR"
 
+static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0); }
+static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
+
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
-    unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
-    switch (colorMode) {
-        case TINYMSX_COLOR_MODE_RGB555:
-            for (int i = 0; i < 16; i++) {
-                this->palette[i] = 0;
-                this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 9;
-                this->palette[i] |= (rgb[i] & 0b000000001111100000000000) >> 6;
-                this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
-            }
-            break;
-        case TINYMSX_COLOR_MODE_RGB565:
-            for (int i = 0; i < 16; i++) {
-                this->palette[i] = 0;
-                this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 8;
-                this->palette[i] |= (rgb[i] & 0b000000001111110000000000) >> 5;
-                this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
-            }
-            break;
-        default:
-            memset(this->palette, 0, sizeof(this->palette));
-    }
     this->initBIOS();
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) {
@@ -72,6 +54,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
     }
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
+    this->vdp.initialize(colorMode, this, detectBlank, detectBreak);
     reset();
 }
 
@@ -90,7 +73,7 @@ void TinyMSX::reset()
         this->cpu->reg.PC = this->getInitAddr();
         printf("Init addr: $%04X\n", this->cpu->reg.PC);
     }
-    memset(&this->vdp, 0, sizeof(this->vdp));
+    this->vdp.reset();
     memset(&this->mem, 0, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->sn76489, 0, sizeof(this->sn76489));
@@ -144,7 +127,6 @@ unsigned short TinyMSX::getInitAddr()
 
 void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
 {
-    memset(&this->ir, 0, sizeof(this->ir));
     this->pad[0] = 0;
     this->pad[1] = 0;
     switch (this->type) {
@@ -317,9 +299,9 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xDD:
                 return this->pad[1];
             case 0xBE:
-                return this->vdpReadData();
+                return this->vdp.readData();
             case 0xBF:
-                return this->vdpReadStatus();
+                return this->vdp.readStatus();
             case 0xD9: // unknown (read from 007: it will occur when pushed a trigger at the title)
             case 0xDE: // SC-3000 keyboard port (ignore)
             case 0xDF: // SC-3000 keyboard port (ignore)
@@ -335,9 +317,9 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
     } else if (this->isMSX1()) {
         switch (port) {
             case 0x98:
-                return this->vdpReadData();
+                return this->vdp.readData();
             case 0x99:
-                return this->vdpReadStatus();
+                return this->vdp.readStatus();
             case 0xA2:
                 return this->psgRead();
             case 0xA8: {
@@ -390,10 +372,10 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->psgWrite(value);
                 break;
             case 0xBE:
-                this->vdpWriteData(value);
+                this->vdp.writeData(value);
                 break;
             case 0xBF:
-                this->vdpWriteAddress(value);
+                this->vdp.writeAddress(value);
                 break;
             case 0xDE: // keyboard port (ignore)
             case 0xDF: // keyboard port (ignore)
@@ -405,10 +387,10 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
     } else if (this->isMSX1()) {
         switch (port) {
             case 0x98:
-                this->vdpWriteData(value);
+                this->vdp.writeData(value);
                 break;
             case 0x99:
-                this->vdpWriteAddress(value);
+                this->vdp.writeAddress(value);
                 break;
             case 0xA0:
                 this->psgLatch(value);
@@ -647,353 +629,12 @@ inline void TinyMSX::psgExec(int clocks)
     }
 }
 
-inline unsigned char TinyMSX::vdpReadData()
-{
-    unsigned char result = this->vdp.readBuffer;
-    this->readVideoMemory();
-    return result;
-}
-
-inline unsigned char TinyMSX::vdpReadStatus()
-{
-    unsigned char result = this->vdp.stat;
-    this->vdp.stat &= 0b01011111;
-    return result;
-}
-
-inline void TinyMSX::vdpWriteData(unsigned char value)
-{
-    this->vdp.addr &= 0x3FFF;
-    this->vdp.readBuffer = value;
-    this->vdp.ram[this->vdp.addr++] = this->vdp.readBuffer;
-}
-
-inline void TinyMSX::vdpWriteAddress(unsigned char value)
-{
-    this->vdp.latch &= 1;
-    this->vdp.tmpAddr[this->vdp.latch++] = value;
-    if (2 == this->vdp.latch) {
-        if (this->vdp.tmpAddr[1] & 0b10000000) {
-            this->updateVdpRegister();
-        } else if (this->vdp.tmpAddr[1] & 0b01000000) {
-            this->updateVdpAddress();
-        } else {
-            this->updateVdpAddress();
-            this->readVideoMemory();
-        }
-    } else if (1 == this->vdp.latch) {
-        this->vdp.addr &= 0xFF00;
-        this->vdp.addr |= this->vdp.tmpAddr[0];
-    }
-}
-
-inline void TinyMSX::updateVdpAddress()
-{
-    this->vdp.addr = this->vdp.tmpAddr[1];
-    this->vdp.addr <<= 8;
-    this->vdp.addr |= this->vdp.tmpAddr[0];
-    this->vdp.addr &= 0x3FFF;
-}
-
-inline void TinyMSX::readVideoMemory()
-{
-    this->vdp.addr &= 0x3FFF;
-    this->vdp.readBuffer = this->vdp.ram[this->vdp.addr++];
-}
-
-inline void TinyMSX::updateVdpRegister()
-{
-    this->vdp.reg[this->vdp.tmpAddr[1] & 0b00001111] = this->vdp.tmpAddr[0];
-}
-
 inline void TinyMSX::consumeClock(int clocks)
 {
     this->psgExec(clocks);
     while (clocks--) {
-        this->ir.frameClock++;
-        this->ir.lineClock++;
-        this->checkUpdateScanline();
-    }
-}
-
-inline void TinyMSX::checkUpdateScanline()
-{
-    if (342 == ir.lineClock) {
-        this->ir.lineClock = 0;
-        this->drawScanline(this->ir.lineNumber++);
-        this->ir.lineNumber %= 262;
-        if (0 == this->ir.lineNumber) {
-            this->cpu->requestBreak();
-        }
-    }
-}
-
-inline void TinyMSX::drawScanline(int lineNumber)
-{
-    if (lineNumber < 192) {
-        switch (this->getVideoMode()) {
-            case 0: this->drawScanlineMode0(lineNumber); break;
-            case 1: this->drawEmptyScanline(lineNumber); break;
-            case 2: this->drawScanlineMode2(lineNumber); break;
-            case 4: this->drawScanlineMode3(lineNumber); break;
-            default: this->drawEmptyScanline(lineNumber);
-        }
-        if (191 == lineNumber) {
-            this->vdp.stat |= 0x80;
-            this->cpu->generateIRQ(0);
-        }
-    }
-}
-
-inline void TinyMSX::drawScanlineMode0(int lineNumber)
-{
-    int pn = (this->vdp.reg[2] & 0b00001111) << 10;
-    int ct = this->vdp.reg[3] << 6;
-    int pg = (this->vdp.reg[4] & 0b00000111) << 11;
-    int bd = this->vdp.reg[7] & 0b00001111;
-    int pixelLine = lineNumber % 8;
-    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 8 * 32];
-    int cur = lineNumber * 256;
-    for (int i = 0; i < 32; i++) {
-        unsigned char ptn = this->vdp.ram[pg + nam[i] * 8 + pixelLine];
-        unsigned char c = this->vdp.ram[ct + nam[i] / 8];
-        unsigned char cc[2];
-        cc[1] = (c & 0xF0) >> 4;
-        cc[1] = cc[1] ? cc[1] : bd;
-        cc[0] = c & 0x0F;
-        cc[0] = cc[0] ? cc[0] : bd;
-        this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-        this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
-    }
-    drawSprites(lineNumber);
-}
-
-inline void TinyMSX::drawScanlineMode2(int lineNumber)
-{
-    int pn = (this->vdp.reg[2] & 0b00001111) << 10;
-    int ct = (this->vdp.reg[3] & 0b10000000) << 6;
-    int cmask = this->vdp.reg[3] & 0b01111111;
-    cmask <<= 3;
-    cmask |= 0x07;
-    int pg = (this->vdp.reg[4] & 0b00000100) << 11;
-    int pmask = this->vdp.reg[4] & 0b00000011;
-    pmask <<= 8;
-    pmask |= 0xFF;
-    int bd = this->vdp.reg[7] & 0b00001111;
-    int pixelLine = lineNumber % 8;
-    unsigned char* nam = &this->vdp.ram[pn + lineNumber / 8 * 32];
-    int cur = lineNumber * 256;
-    int ci = (lineNumber / 64) * 256;
-    for (int i = 0; i < 32; i++) {
-        unsigned char ptn = this->vdp.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
-        unsigned char c = this->vdp.ram[ct + ((nam[i] + ci) & cmask) * 8 + pixelLine];
-        unsigned char cc[2];
-        cc[1] = (c & 0xF0) >> 4;
-        cc[1] = cc[1] ? cc[1] : bd;
-        cc[0] = c & 0x0F;
-        cc[0] = cc[0] ? cc[0] : bd;
-        this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-        this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-        this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
-    }
-    drawSprites(lineNumber);
-}
-
-inline void TinyMSX::drawScanlineMode3(int lineNumber)
-{
-    // todo: draw Mode 3 characters
-    drawSprites(lineNumber);
-}
-
-inline void TinyMSX::drawEmptyScanline(int lineNumber)
-{
-    int bd = this->vdp.reg[7] & 0b00001111;
-    int cur = lineNumber * 256;
-    for (int i = 0; i < 256; i++) this->display[cur++] = palette[bd];
-}
-
-inline void TinyMSX::drawSprites(int lineNumber)
-{
-    static const unsigned char bit[8] = {
-        0b10000000,
-        0b01000000,
-        0b00100000,
-        0b00010000,
-        0b00001000,
-        0b00000100,
-        0b00000010,
-        0b00000001};
-    bool si = this->vdp.reg[1] & 0b00000010 ? true : false;
-    bool mag = this->vdp.reg[1] & 0b00000001 ? true : false;
-    int sa = (this->vdp.reg[5] & 0b01111111) << 7;
-    int sg = (this->vdp.reg[6] & 0b00000111) << 11;
-    int sn = 0;
-    unsigned char dlog[256];
-    unsigned char wlog[256];
-    memset(dlog, 0, sizeof(dlog));
-    memset(wlog, 0, sizeof(wlog));
-    for (int i = 0; i < 32; i++) {
-        int cur = sa + i * 4;
-        unsigned char y = this->vdp.ram[cur++];
-        if (208 == y) break;
-        unsigned char x = this->vdp.ram[cur++];
-        unsigned char ptn = this->vdp.ram[cur++];
-        unsigned char col = this->vdp.ram[cur++];
-        if (col & 0x80) x -= 32;
-        col &= 0b00001111;
-        y++;
-        if (mag) {
-            if (si) {
-                // 16x16 x 2
-                if (y <= lineNumber && lineNumber < y + 32) {
-                    sn++;
-                    if (5 <= sn) {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= 0b01000000 | i;
-                        break;
-                    } else {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= i;
-                    }
-                    int pixelLine = lineNumber - y;
-                    cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                    int dcur = lineNumber * 256;
-                    for (int j = 0; j < 16; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j / 2]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                    cur += 8;
-                    for (int j = 0; j < 16; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j / 2]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // 8x8 x 2
-                if (y <= lineNumber && lineNumber < y + 16) {
-                    sn++;
-                    if (5 <= sn) {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= 0b01000000 | i;
-                        break;
-                    } else {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= i;
-                    }
-                    cur = sg + ptn * 8 + lineNumber % 8;
-                    int dcur = lineNumber * 256;
-                    for (int j = 0; j < 16; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j / 2]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            if (si) {
-                // 16x16 x 1
-                if (y <= lineNumber && lineNumber < y + 16) {
-                    sn++;
-                    if (5 <= sn) {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= 0b01000000 | i;
-                        break;
-                    } else {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= i;
-                    }
-                    int pixelLine = lineNumber - y;
-                    cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                    int dcur = lineNumber * 256;
-                    for (int j = 0; j < 8; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                    cur += 16;
-                    for (int j = 0; j < 8; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // 8x8 x 1
-                if (y <= lineNumber && lineNumber < y + 8) {
-                    sn++;
-                    if (5 <= sn) {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= 0b01000000 | i;
-                        break;
-                    } else {
-                        this->vdp.stat &= 0b11100000;
-                        this->vdp.stat |= i;
-                    }
-                    cur = sg + ptn * 8 + lineNumber % 8;
-                    int dcur = lineNumber * 256;
-                    for (int j = 0; j < 8; j++, x++) {
-                        if (wlog[x]) {
-                            this->vdp.stat |= 0b00100000;
-                        }
-                        if (0 == dlog[x]) {
-                            if (this->vdp.ram[cur] & bit[j]) {
-                                this->display[dcur + x] = this->palette[col];
-                                dlog[x] = col;
-                                wlog[x] = 1;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        this->vdp.tick();
+        this->vdp.tick();
     }
 }
 
@@ -1072,14 +713,13 @@ const void* TinyMSX::saveState(size_t* size)
     int ptr = 0;
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_CPU, sizeof(this->cpu->reg), &this->cpu->reg);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_RAM, this->calcAvairableRamSize(), this->ram);
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp), &this->vdp);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp.ctx), &this->vdp.ctx);
     if (this->isSG1000()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->sn76489), &this->sn76489);
     } else if (this->isMSX1()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->ay8910), &this->ay8910);
     }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_INT, sizeof(this->ir), &this->ir);
     *size = ptr;
     return this->tmpBuffer;
 }
@@ -1101,7 +741,8 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_RAM, 2)) {
             memcpy(this->ram, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_VDP, 2)) {
-            memcpy(&this->vdp, d, ds);
+            this->vdp.reset();
+            memcpy(&this->vdp.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_PSG, 2)) {
             if (this->isSG1000()) {
                 memcpy(&this->sn76489, d, ds);
@@ -1110,8 +751,6 @@ void TinyMSX::loadState(const void* data, size_t size)
             }
         } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
             memcpy(&this->mem, d, ds);
-        } else if (0 == strncmp(ch, STATE_CHUNK_INT, 2)) {
-            memcpy(&this->ir, d, ds);
         } else {
             // ignore unknown chunk
         }
