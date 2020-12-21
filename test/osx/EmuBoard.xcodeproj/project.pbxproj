@@ -35,6 +35,8 @@
 		74D9119D258CAD0900A6069D /* msxslot.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msxslot.hpp; path = ../../../../src/msxslot.hpp; sourceTree = "<group>"; };
 		74D9119F2590377E00A6069D /* cbios_logo_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_logo_msx1.rom; path = ../../../../bios/cbios_logo_msx1.rom; sourceTree = "<group>"; };
 		74D911A22590691700A6069D /* tms9918a.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tms9918a.hpp; path = ../../../../src/tms9918a.hpp; sourceTree = "<group>"; };
+		74D911A425907FC900A6069D /* ay8910.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = ../../../../src/ay8910.hpp; sourceTree = "<group>"; };
+		74D911A525907FC900A6069D /* sn76489.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = sn76489.hpp; path = ../../../../src/sn76489.hpp; sourceTree = "<group>"; };
 		94D1AB2521D86ADC00DC595E /* EmuBoard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmuBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D1AB2821D86ADC00DC595E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		94D1AB2921D86ADC00DC595E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -69,6 +71,8 @@
 		74AAA52B25883D81007192EF /* tiny-msx */ = {
 			isa = PBXGroup;
 			children = (
+				74D911A425907FC900A6069D /* ay8910.hpp */,
+				74D911A525907FC900A6069D /* sn76489.hpp */,
 				74D9119D258CAD0900A6069D /* msxslot.hpp */,
 				74D911A22590691700A6069D /* tms9918a.hpp */,
 				74AAA52E25883DA9007192EF /* tinymsx_def.h */,

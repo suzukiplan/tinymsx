@@ -3,7 +3,6 @@
 #define INCLUDE_TMS9918A_HPP
 
 #include "tinymsx_def.h"
-#include "z80.hpp"
 #include <string.h>
 
 class TMS9918A
