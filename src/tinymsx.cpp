@@ -35,6 +35,7 @@
 #define STATE_CHUNK_SN7 "S7"
 #define STATE_CHUNK_AY3 "A3"
 #define STATE_CHUNK_MEM "MR"
+#define STATE_CHUNK_SLT "SL"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
@@ -89,14 +90,14 @@ void TinyMSX::reset()
         if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
         //this->slots.add(3, 0, this->bios.logo, true);
         this->slots.add(3, 3, this->ram, false);
-        this->mem.page[0] = 0;
-        this->mem.page[1] = 1;
-        this->mem.page[2] = 2;
-        this->mem.page[3] = 3;
-        this->mem.slot[0] = 0b10000000;
-        this->mem.slot[1] = 0b10000001;
-        this->mem.slot[2] = 0b10000101;
-        this->mem.slot[3] = 0b10001111;
+        this->slots.setupPage(0, 0);
+        this->slots.setupPage(1, 1);
+        this->slots.setupPage(2, 1);
+        this->slots.setupPage(3, 3);
+        this->slots.setupSlot(0, 0b10000000);
+        this->slots.setupSlot(1, 0b10000001);
+        this->slots.setupSlot(2, 0b10000001);
+        this->slots.setupSlot(3, 0b10001111);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
@@ -180,27 +181,9 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             return this->ram[addr & 0x1FFF];
         }
     } else if (this->isMSX1()) {
-        if (0xFFFF == addr) {
-            unsigned char result = 0;
-            result |= (this->mem.slot[0] & 0b00001100) >> 2;
-            result |= (this->mem.slot[1] & 0b00001100);
-            result |= (this->mem.slot[2] & 0b00001100) << 2;
-            result |= (this->mem.slot[3] & 0b00001100) << 4;
-            return ~result;
-        }
-        int pn = addr / 0x4000;
-        return this->slots.read(this->getSlotNumber(pn), this->getExtSlotNumber(pn), addr);
+        return 0xFFFF == addr ? this->slots.readExtraStatus() : this->slots.read(addr);
     } else {
         return 0; // unknown system
-    }
-}
-
-inline void TinyMSX::setExtraPage(int slot, int extra)
-{
-    if (this->slots.hasSlot(slot, extra)) {
-        this->mem.slot[slot] &= 0b11110011;
-        this->mem.slot[slot] |= extra ? 0x80 : 0;
-        this->mem.slot[slot] |= extra << 2;
     }
 }
 
@@ -216,18 +199,10 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         }
     } else if (this->isMSX1()) {
         if (0xFFFF == addr) {
-            unsigned char previous = this->readMemory(0xFFFF);
-            this->setExtraPage(0, value & 0b00000011);
-            this->setExtraPage(1, value & 0b00001100 >> 2);
-            this->setExtraPage(2, value & 0b00110000 >> 4);
-            this->setExtraPage(3, value & 0b11000000 >> 6);
-            if (this->readMemory(0xFFFF) != previous) {
-                printf("[$%04X] extra slot changed: %d %d %d %d\n", cpu->reg.PC, mem.slot[0] >> 2 & 3, mem.slot[1] >> 2 & 3, mem.slot[2] >> 2 & 3, mem.slot[3] >> 2 & 3);
-            }
-            return;
+            this->slots.changeSecondarySlots(value);
+        } else {
+            this->slots.write(addr, value);
         }
-        int pn = addr / 0x4000;
-        this->slots.write(this->getSlotNumber(pn), this->getExtSlotNumber(pn), addr, value);
     }
 }
 
@@ -314,12 +289,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xA2:
                 return this->ay8910.read();
             case 0xA8: {
-                unsigned char result = 0;
-                result |= (this->mem.slot[3] & 0b00000011) << 6;
-                result |= (this->mem.slot[2] & 0b00000011) << 4;
-                result |= (this->mem.slot[1] & 0b00000011) << 2;
-                result |= (this->mem.slot[0] & 0b00000011);
-                return result;
+                return this->slots.readPrimaryStatus();
             }
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
@@ -389,36 +359,23 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             case 0xA1:
                 this->ay8910.write(value);
                 break;
-            case 0xA8: {
-                for (int i = 0; i < 4; i++) {
-                    this->mem.slot[i] &= 0b11111100;
-                }
-                this->mem.slot[3] |= value >> 6 & 3;
-                this->mem.slot[2] |= value >> 4 & 3;
-                this->mem.slot[1] |= value >> 2 & 3;
-                this->mem.slot[0] |= value & 3;
-                fprintf(stderr, "[$%04X] primary slot changed: %d %d %d %d\n", cpu->reg.PC, mem.slot[0] & 3, mem.slot[1] & 3, mem.slot[2] & 3, mem.slot[3] & 3);
+            case 0xA8:
+                this->slots.changePrimarySlots(value);
                 break;
-            }
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
                 this->mem.portAA = value;
                 break;
             case 0xAB: // to access the ports control register. (Write only)
                 break;
-            case 0xFC: this->changeMemoryMap(3, value); break;
-            case 0xFD: this->changeMemoryMap(2, value); break;
-            case 0xFE: this->changeMemoryMap(1, value); break;
-            case 0xFF: this->changeMemoryMap(0, value); break;
+            case 0xFC: this->slots.setupPage(3, value); break;
+            case 0xFD: this->slots.setupPage(2, value); break;
+            case 0xFE: this->slots.setupPage(1, value); break;
+            case 0xFF: this->slots.setupPage(0, value); break;
             default:
                 printf("unknown out port $%02X <- $%02X\n", port, value);
                 exit(-1);
         }
     }
-}
-
-inline void TinyMSX::changeMemoryMap(int page, unsigned char map)
-{
-    this->mem.page[page & 3] = map;
 }
 
 inline void TinyMSX::psgExec(int clocks)
@@ -532,6 +489,7 @@ const void* TinyMSX::saveState(size_t* size)
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
     }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SLT, sizeof(this->slots.ctx), &this->slots.ctx);
     *size = ptr;
     return this->tmpBuffer;
 }
@@ -559,6 +517,8 @@ void TinyMSX::loadState(const void* data, size_t size)
             memcpy(&this->sn76489.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_AY3, 2)) {
             memcpy(&this->ay8910.ctx, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_SLT, 2)) {
+            memcpy(&this->slots.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
             memcpy(&this->mem, d, ds);
         } else {
