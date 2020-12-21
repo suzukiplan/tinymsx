@@ -2,8 +2,6 @@
 #define INCLUDE_AY8910_HPP
 
 #include <string.h>
-#define SAMPLE_RATE 44100.0
-#define PSG_SHIFT 16
 
 class AY8910
 {
