@@ -59,7 +59,7 @@ class MsxSlot
         this->ctx.slot[0] |= value & 3;
     }
 
-    inline unsigned char readExtraStatus()
+    inline unsigned char readSecondaryStatus()
     {
         unsigned char result = 0;
         result |= (this->ctx.slot[0] & 0b00001100) >> 2;
