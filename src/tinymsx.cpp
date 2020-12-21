@@ -88,6 +88,7 @@ void TinyMSX::reset()
     if (this->cpu) {
         memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
         this->cpu->reg.PC = this->getInitAddr();
+        printf("Init addr: $%04X\n", this->cpu->reg.PC);
     }
     memset(&this->vdp, 0, sizeof(this->vdp));
     memset(&this->mem, 0, sizeof(this->mem));
@@ -104,6 +105,24 @@ void TinyMSX::reset()
         this->ay8910.noise.seed = 0xffff;
         this->ay8910.noise.count = 0x40;
         this->ay8910.env.pause = 1;
+        this->slots.reset();
+        this->slots.add(0, 0, this->bios.main, true);
+        this->slots.add(0, 1, this->bios.main, true);
+        //this->slots.add(0, 1, &this->bios.main[0x4000], true);
+        this->slots.add(1, 0, this->rom, true);
+        if (0x4000 < this->romSize) this->slots.add(1, 1, &this->rom[0x4000], true);
+        if (0x8000 < this->romSize) this->slots.add(1, 2, &this->rom[0x8000], true);
+        if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
+        //this->slots.add(3, 0, this->bios.logo, true);
+        this->slots.add(3, 3, this->ram, false);
+        this->mem.page[0] = 0;
+        this->mem.page[1] = 1;
+        this->mem.page[2] = 2;
+        this->mem.page[3] = 3;
+        this->mem.slot[0] = 0b10000000;
+        this->mem.slot[1] = 0b10000001;
+        this->mem.slot[2] = 0b10000101;
+        this->mem.slot[3] = 0b10001111;
     }
     this->psgClock = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
@@ -188,48 +207,27 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             return this->ram[addr & 0x1FFF];
         }
     } else if (this->isMSX1()) {
-#if 1
-        switch (addr / 0x4000) {
-            case 0: return this->bios.main[addr & 0x3FFF];
-            case 1: return this->rom[addr & 0x3FFF];
-            default: return this->ram[addr & 0x3FFF];
-        }
-#else
         if (0xFFFF == addr) {
-            if (this->mem.slot[0] & 0x80) {
-                unsigned char result = 0;
-                result |= (this->mem.slot[3] & 0b00000011) << 6;
-                result |= (this->mem.slot[2] & 0b00000011) << 4;
-                result |= (this->mem.slot[1] & 0b00000011) << 2;
-                result |= (this->mem.slot[0] & 0b00000011);
-                return ~result;
-            } else {
-                return 0xFF;
-            }
+            unsigned char result = 0;
+            result |= (this->mem.slot[0] & 0b00001100) >> 2;
+            result |= (this->mem.slot[1] & 0b00001100);
+            result |= (this->mem.slot[2] & 0b00001100) << 2;
+            result |= (this->mem.slot[3] & 0b00001100) << 4;
+            return ~result;
         }
         int pn = addr / 0x4000;
-        switch (this->getSlotNumber(pn)) {
-            case 0: return this->bios.main[addr & 0x7FFF];
-            case 1: return this->bios.logo[addr & 0x3FFF];
-            case 2:
-                switch (this->getExtSlotNumber(pn)) {
-                    case 0: return this->ram[addr & 0x3FFF];
-                    default: return 0xFF;
-                }
-            case 3:
-                addr &= 0x3FFF;
-                switch (this->getExtSlotNumber(pn)) {
-                    case 0: return 0x04000 <= this->romSize ? this->rom[addr] : 0xFF;
-                    case 1: return 0x08000 <= this->romSize ? this->rom[0x4000 + addr] : 0xFF;
-                    case 2: return 0x0C000 <= this->romSize ? this->rom[0x8000 + addr] : 0xFF;
-                    case 3: return 0x10000 <= this->romSize ? this->rom[0xC000 + addr] : 0xFF;
-                    default: return 0xFF;
-                }
-            default: return 0xFF;
-        }
-#endif
+        return this->slots.read(this->getSlotNumber(pn), this->getExtSlotNumber(pn), addr);
     } else {
         return 0; // unknown system
+    }
+}
+
+inline void TinyMSX::setExtraPage(int slot, int extra)
+{
+    if (this->slots.hasSlot(slot, extra)) {
+        this->mem.slot[slot] &= 0b11110011;
+        this->mem.slot[slot] |= extra ? 0x80 : 0;
+        this->mem.slot[slot] |= extra << 2;
     }
 }
 
@@ -244,26 +242,19 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
             this->ram[addr & 0x1FFF] = value;
         }
     } else if (this->isMSX1()) {
-#if 1
-        this->ram[addr & 0x3FFF] = value;
-#else
         if (0xFFFF == addr) {
-            for (int i = 0; i < 4; i++) {
-                this->mem.slot[i] &= 0b11110011;
-                this->mem.slot[i] |= 0b10000000;
+            unsigned char previous = this->readMemory(0xFFFF);
+            this->setExtraPage(0, value & 0b00000011);
+            this->setExtraPage(1, value & 0b00001100 >> 2);
+            this->setExtraPage(2, value & 0b00110000 >> 4);
+            this->setExtraPage(3, value & 0b11000000 >> 6);
+            if (this->readMemory(0xFFFF) != previous) {
+                printf("[$%04X] extra slot changed: %d %d %d %d\n", cpu->reg.PC, mem.slot[0] >> 2 & 3, mem.slot[1] >> 2 & 3, mem.slot[2] >> 2 & 3, mem.slot[3] >> 2 & 3);
             }
-            this->mem.slot[3] |= (value & 0b11000000) >> 4;
-            this->mem.slot[2] |= (value & 0b00110000) >> 2;
-            this->mem.slot[1] |= (value & 0b00001100);
-            this->mem.slot[0] |= (value & 0b00000011) << 2;
             return;
         }
         int pn = addr / 0x4000;
-        addr &= 0x3FFF;
-        if (this->getSlotNumber(pn) == 2 && this->getExtSlotNumber(pn) == 0) {
-            this->ram[addr] = value;
-        }
-#endif
+        this->slots.write(this->getSlotNumber(pn), this->getExtSlotNumber(pn), addr, value);
     }
 }
 
@@ -381,6 +372,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 }
                 return ~result;
             }
+            case 0xAA: return 0xFF;
             default:
                 printf("unknown input port $%02X\n", port);
                 exit(-1);
@@ -428,11 +420,11 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 for (int i = 0; i < 4; i++) {
                     this->mem.slot[i] &= 0b11111100;
                 }
-                this->mem.slot[3] |= (value & 0b11000000) >> 6;
-                this->mem.slot[2] |= (value & 0b00110000) >> 4;
-                this->mem.slot[1] |= (value & 0b00001100) >> 2;
-                this->mem.slot[0] |= (value & 0b00000011);
-                fprintf(stderr, "basic slot changed: %d %d %d %d\n", mem.slot[0] & 3, mem.slot[1] & 3, mem.slot[2] & 3, mem.slot[3] & 3);
+                this->mem.slot[3] |= value >> 6 & 3;
+                this->mem.slot[2] |= value >> 4 & 3;
+                this->mem.slot[1] |= value >> 2 & 3;
+                this->mem.slot[0] |= value & 3;
+                fprintf(stderr, "[$%04X] primary slot changed: %d %d %d %d\n", cpu->reg.PC, mem.slot[0] & 3, mem.slot[1] & 3, mem.slot[2] & 3, mem.slot[3] & 3);
                 break;
             }
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
@@ -726,12 +718,13 @@ inline void TinyMSX::consumeClock(int clocks)
 
 inline void TinyMSX::checkUpdateScanline()
 {
-    switch (this->ir.lineClock) {
-        case 224:
-            this->ir.lineClock = 0;
-            this->drawScanline(this->ir.lineNumber++);
-            this->ir.lineNumber %= 262;
-            break;
+    if (342 == ir.lineClock) {
+        this->ir.lineClock = 0;
+        this->drawScanline(this->ir.lineNumber++);
+        this->ir.lineNumber %= 262;
+        if (0 == this->ir.lineNumber) {
+            this->cpu->requestBreak();
+        }
     }
 }
 
@@ -749,8 +742,6 @@ inline void TinyMSX::drawScanline(int lineNumber)
             this->vdp.stat |= 0x80;
             this->cpu->generateIRQ(0);
         }
-    } else if (261 == lineNumber) {
-        this->cpu->requestBreak();
     }
 }
 

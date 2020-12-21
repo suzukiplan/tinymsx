@@ -37,5 +37,6 @@ const void* tinymsx_save(const void* context, size_t* size) { return ((TinyMSX*)
 void tinymsx_load(const void* context, const void* data, size_t size) { ((TinyMSX*)context)->loadState(data, size); }
 unsigned short tinymsx_backdrop(const void* context) { return ((TinyMSX*)context)->getBackdropColor(); }
 void tinymsx_load_bios_msx1_main(const void* context, void* bios, size_t size) { ((TinyMSX*)context)->loadBiosFromMemory(bios, size); }
+void tinymsx_load_bios_msx1_logo(const void* context, void* logo, size_t size) { ((TinyMSX*)context)->loadLogoFromMemory(logo, size); }
 void tinymsx_setup_special_key1(const void* context, unsigned char c, int isTenKey) { ((TinyMSX*)context)->setupSpecialKey1(c, isTenKey); }
 void tinymsx_setup_special_key2(const void* context, unsigned char c, int isTenKey) { ((TinyMSX*)context)->setupSpecialKey2(c, isTenKey); }
