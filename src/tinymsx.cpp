@@ -36,7 +36,6 @@
 #define STATE_CHUNK_VDP "VD"
 #define STATE_CHUNK_PSG "PS"
 #define STATE_CHUNK_MEM "MR"
-#define STATE_CHUNK_INT "IR"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
