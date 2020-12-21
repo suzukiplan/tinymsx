@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "z80.hpp"
 #include "tinymsx_def.h"
+#include "msxslot.hpp"
 
 class TinyMSX {
     private:
@@ -113,6 +114,7 @@ class TinyMSX {
             int lineNumber;
         } ir;
         unsigned char ram[0x4000];
+        MsxSlot slots;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, int colorMode);
         ~TinyMSX();
@@ -143,6 +145,7 @@ class TinyMSX {
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
         inline unsigned short getInitAddr();
         inline unsigned char readMemory(unsigned short addr);
+        inline void setExtraPage(int slot, int extra);
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
