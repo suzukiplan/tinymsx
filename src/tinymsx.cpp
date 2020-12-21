@@ -28,13 +28,12 @@
 #include <string.h>
 
 #define CPU_RATE 3579545
-#define SAMPLE_RATE 44100.0
-#define PSG_SHIFT 16
 
 #define STATE_CHUNK_CPU "CP"
 #define STATE_CHUNK_RAM "RA"
 #define STATE_CHUNK_VDP "VD"
-#define STATE_CHUNK_PSG "PS"
+#define STATE_CHUNK_SN7 "S7"
+#define STATE_CHUNK_AY3 "A3"
 #define STATE_CHUNK_MEM "MR"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0); }
@@ -75,18 +74,11 @@ void TinyMSX::reset()
     this->vdp.reset();
     memset(&this->mem, 0, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
-    memset(&this->sn76489, 0, sizeof(this->sn76489));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
-        unsigned char levels[16] = {255, 180, 127, 90, 63, 44, 31, 22, 15, 10, 7, 5, 3, 2, 1, 0};
-        memcpy(this->psgLevels, &levels, sizeof(levels));
+        this->sn76489.reset(CPU_RATE);
     } else if (this->isMSX1()) {
-        unsigned char levels[16] = {0, 1, 2, 3, 5, 7, 11, 15, 22, 31, 44, 63, 90, 127, 180, 255};
-        memcpy(this->psgLevels, &levels, sizeof(levels));
-        for (int i = 0; i < 3; i++) this->ay8910.count[i] = 0x1000;
-        this->ay8910.noise.seed = 0xffff;
-        this->ay8910.noise.count = 0x40;
-        this->ay8910.env.pause = 1;
+        this->ay8910.reset();
         this->slots.reset();
         this->slots.add(0, 0, this->bios.main, true);
         this->slots.add(0, 1, this->bios.main, true);
@@ -106,7 +98,6 @@ void TinyMSX::reset()
         this->mem.slot[2] = 0b10000101;
         this->mem.slot[3] = 0b10001111;
     }
-    this->psgClock = CPU_RATE / SAMPLE_RATE * (1 << PSG_SHIFT);
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
 }
@@ -159,6 +150,7 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
             this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0b00001000 : 0;
             this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
             this->pad[1] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+            this->ay8910.setPads(this->pad[0], this->pad[1]);
             break;
     }
     if (this->cpu) {
@@ -320,7 +312,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0x99:
                 return this->vdp.readStatus();
             case 0xA2:
-                return this->psgRead();
+                return this->ay8910.read();
             case 0xA8: {
                 unsigned char result = 0;
                 result |= (this->mem.slot[3] & 0b00000011) << 6;
@@ -368,7 +360,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
         switch (port) {
             case 0x7E:
             case 0x7F:
-                this->psgWrite(value);
+                this->sn76489.write(value);
                 break;
             case 0xBE:
                 this->vdp.writeData(value);
@@ -392,10 +384,10 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->vdp.writeAddress(value);
                 break;
             case 0xA0:
-                this->psgLatch(value);
+                this->ay8910.latch(value);
                 break;
             case 0xA1:
-                this->psgWrite(value);
+                this->ay8910.write(value);
                 break;
             case 0xA8: {
                 for (int i = 0; i < 4; i++) {
@@ -429,201 +421,22 @@ inline void TinyMSX::changeMemoryMap(int page, unsigned char map)
     this->mem.page[page & 3] = map;
 }
 
-inline void TinyMSX::psgLatch(unsigned char value)
-{
-    if (this->isMSX1()) {
-        this->ay8910.latch = value & 0x1F;
-    }
-}
-
-inline void TinyMSX::psgWrite(unsigned char value)
-{
-    if (this->isSG1000()) {
-        // SN76489
-        if (value & 0x80) {
-            this->sn76489.i = (value >> 4) & 7;
-            this->sn76489.r[this->sn76489.i] = value & 0x0f;
-        } else {
-            this->sn76489.r[this->sn76489.i] |= (value & 0x3f) << 4;
-        }
-        switch (this->sn76489.r[6] & 3) {
-            case 0: this->sn76489.np = 1; break;
-            case 1: this->sn76489.np = 2; break;
-            case 2: this->sn76489.np = 4; break;
-            case 3: this->sn76489.np = this->sn76489.r[4]; break;
-        }
-        this->sn76489.nx = (this->sn76489.r[6] & 0x04) ? 0x12000 : 0x08000;
-    } else {
-        // AY-3-8910
-        int reg = this->ay8910.latch;
-        this->ay8910.reg[reg] = value;
-        if (reg < 6) {
-            value &= reg & 1 ? 0x0F : 0xFF;
-            int c = reg >> 1;
-            this->ay8910.freq[c] = ((this->ay8910.reg[c * 2 + 1] & 15) << 8) + this->ay8910.reg[c * 2];
-        } else if (6 == reg) {
-            this->ay8910.noise.freq = (value & 0x1F) << 1;
-        } else if (7 == reg) {
-            this->ay8910.tmask[0] = value & 1;
-            this->ay8910.tmask[1] = value & 2;
-            this->ay8910.tmask[2] = value & 4;
-            this->ay8910.nmask[0] = value & 8;
-            this->ay8910.nmask[1] = value & 16;
-            this->ay8910.nmask[2] = value & 32;
-        } else if (reg < 11) {
-            this->ay8910.volume[reg - 8] = (value & 0x1F) << 1;
-        } else if (reg < 13) {
-            this->ay8910.env.freq = (this->ay8910.reg[12] << 8) + this->ay8910.reg[11];
-        } else if (13 == reg) {
-            value &= 0x0F;
-            this->ay8910.env.cont = (value >> 3) & 1;
-            this->ay8910.env.attack = (value >> 2) & 1;
-            this->ay8910.env.alternate = (value >> 1) & 1;
-            this->ay8910.env.hold = value & 1;
-            this->ay8910.env.face = this->ay8910.env.attack;
-            this->ay8910.env.pause = 0;
-            this->ay8910.env.count = 0x10000 - this->ay8910.env.freq;
-            this->ay8910.env.ptr = this->ay8910.env.face ? 0 : 0x1F;
-        }
-    }
-}
-
-inline unsigned char TinyMSX::psgRead()
-{
-    if (this->isMSX1()) {
-        switch (this->ay8910.latch) {
-            case 0x0E: return ~(this->pad[0] & 0x3F);
-            case 0x0F: return ~(this->pad[1] & 0x3F);
-            default: return this->ay8910.reg[this->ay8910.latch];
-        }
-    }
-    return 0xFF;
-}
-
-inline void TinyMSX::sn76489Calc(short* left, short* right)
-{
-    for (int i = 0; i < 3; i++) {
-        int regidx = i << 1;
-        if (this->sn76489.r[regidx]) {
-            unsigned int cc = this->psgClock + this->sn76489.c[i];
-            while ((cc & 0x80000000) == 0) {
-                cc -= (this->sn76489.r[regidx] << (PSG_SHIFT + 4));
-                this->sn76489.e[i] ^= 1;
-            }
-            this->sn76489.c[i] = cc;
-        } else {
-            this->sn76489.e[i] = 1;
-        }
-    }
-    if (this->sn76489.np) {
-        unsigned int cc = this->psgClock + this->sn76489.c[3];
-        while ((cc & 0x80000000) == 0) {
-            cc -= (this->sn76489.np << (PSG_SHIFT + 4));
-            this->sn76489.ns >>= 1;
-            if (this->sn76489.ns & 1) {
-                this->sn76489.ns = this->sn76489.ns ^ this->sn76489.nx;
-                this->sn76489.e[3] = 1;
-            } else {
-                this->sn76489.e[3] = 0;
-            }
-        }
-        this->sn76489.c[3] = cc;
-    }
-    int w = 0;
-    if (this->sn76489.e[0]) w += this->psgLevels[this->sn76489.r[1]];
-    if (this->sn76489.e[1]) w += this->psgLevels[this->sn76489.r[3]];
-    if (this->sn76489.e[2]) w += this->psgLevels[this->sn76489.r[5]];
-    if (this->sn76489.e[3]) w += this->psgLevels[this->sn76489.r[7]];
-    w <<= 4;
-    w = (short)w;
-    w *= 45;
-    w /= 10;
-    if (32767 < w) {
-        w = 32767;
-    } else if (w < -32768) {
-        w = -32768;
-    }
-    *left = (short)w;
-    *right = (short)w;
-}
-
-inline short TinyMSX::ay8910Calc()
-{
-    // Envelope
-    this->ay8910.env.count += 5;
-    while (this->ay8910.env.count >= 0x10000 && this->ay8910.env.freq != 0) {
-        if (!this->ay8910.env.pause) {
-            if (this->ay8910.env.face) {
-                this->ay8910.env.ptr = (this->ay8910.env.ptr + 1) & 0x3f;
-            } else {
-                this->ay8910.env.ptr = (this->ay8910.env.ptr + 0x3f) & 0x3f;
-            }
-        }
-        if (this->ay8910.env.ptr & 0x20) {
-            if (this->ay8910.env.cont) {
-                if (this->ay8910.env.alternate ^ this->ay8910.env.hold) this->ay8910.env.face ^= 1;
-                if (this->ay8910.env.hold) this->ay8910.env.pause = 1;
-                this->ay8910.env.ptr = this->ay8910.env.face ? 0 : 0x1f;
-            } else {
-                this->ay8910.env.pause = 1;
-                this->ay8910.env.ptr = 0;
-            }
-        }
-        this->ay8910.env.count -= this->ay8910.env.freq;
-    }
-
-    // Noise
-    this->ay8910.noise.count += 5;
-    if (this->ay8910.noise.count & 0x40) {
-        if (this->ay8910.noise.seed & 1) {
-            this->ay8910.noise.seed ^= 0x24000;
-        }
-        this->ay8910.noise.seed >>= 1;
-        this->ay8910.noise.count -= this->ay8910.noise.freq ? this->ay8910.noise.freq : (1 << 1);
-    }
-    int noise = this->ay8910.noise.seed & 1;
-
-    // Tone
-    for (int i = 0; i < 3; i++) {
-        this->ay8910.count[i] += 5;
-        if (this->ay8910.count[i] & 0x1000) {
-            if (this->ay8910.freq[i] > 1) {
-                this->ay8910.edge[i] = !this->ay8910.edge[i];
-                this->ay8910.count[i] -= this->ay8910.freq[i];
-            } else {
-                this->ay8910.edge[i] = 1;
-            }
-        }
-        if ((this->ay8910.tmask[i] || this->ay8910.edge[i]) && (this->ay8910.nmask[i] || noise)) {
-            this->ay8910.ch_out[i] += (this->psgLevels[(this->ay8910.volume[i] & 0x1F) >> 1] << 4);
-        }
-        this->ay8910.ch_out[i] >>= 1;
-    }
-    int w = this->ay8910.ch_out[0];
-    w += this->ay8910.ch_out[1];
-    w += this->ay8910.ch_out[2];
-    if (32767 < w) w = 32767;
-    if (w < -32768) w = -32768;
-    return (short)w;
-}
-
 inline void TinyMSX::psgExec(int clocks)
 {
     if (this->isSG1000()) {
-        this->sn76489.b += clocks * SAMPLE_RATE;
-        while (0 <= this->sn76489.b) {
-            this->sn76489.b -= CPU_RATE;
-            this->sn76489Calc(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+        this->sn76489.ctx.b += clocks * SAMPLE_RATE;
+        while (0 <= this->sn76489.ctx.b) {
+            this->sn76489.ctx.b -= CPU_RATE;
+            this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
         static const int interval = CPU_RATE * 256.0 / SAMPLE_RATE * (32.0 / 44.1);
-        this->ay8910.clocks += clocks << 8;
-        while (interval <= this->ay8910.clocks) {
-            this->ay8910.clocks -= interval;
-            short w = this->ay8910Calc();
-            this->soundBuffer[this->soundBufferCursor++] = w;
-            this->soundBuffer[this->soundBufferCursor++] = w;
+        this->ay8910.ctx.clocks += clocks << 8;
+        while (interval <= this->ay8910.ctx.clocks) {
+            this->ay8910.ctx.clocks -= interval;
+            this->ay8910.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+            this->soundBufferCursor += 2;
         }
     }
 }
@@ -714,9 +527,9 @@ const void* TinyMSX::saveState(size_t* size)
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_RAM, this->calcAvairableRamSize(), this->ram);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp.ctx), &this->vdp.ctx);
     if (this->isSG1000()) {
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->sn76489), &this->sn76489);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SN7, sizeof(this->sn76489.ctx), &this->sn76489.ctx);
     } else if (this->isMSX1()) {
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_PSG, sizeof(this->ay8910), &this->ay8910);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
     }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
     *size = ptr;
@@ -742,12 +555,10 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_VDP, 2)) {
             this->vdp.reset();
             memcpy(&this->vdp.ctx, d, ds);
-        } else if (0 == strncmp(ch, STATE_CHUNK_PSG, 2)) {
-            if (this->isSG1000()) {
-                memcpy(&this->sn76489, d, ds);
-            } else if (this->isMSX1()) {
-                memcpy(&this->ay8910, d, ds);
-            }
+        } else if (0 == strncmp(ch, STATE_CHUNK_SN7, 2)) {
+            memcpy(&this->sn76489.ctx, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_AY3, 2)) {
+            memcpy(&this->ay8910.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
             memcpy(&this->mem, d, ds);
         } else {

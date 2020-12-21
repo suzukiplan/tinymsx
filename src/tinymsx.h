@@ -31,6 +31,8 @@
 #include "tinymsx_def.h"
 #include "msxslot.hpp"
 #include "tms9918a.hpp"
+#include "sn76489.hpp"
+#include "ay8910.hpp"
 
 class TinyMSX {
     private:
@@ -49,51 +51,8 @@ class TinyMSX {
         unsigned char tmpBuffer[1024 * 1024];
     public:
         TMS9918A vdp;
-        struct SN76489 {
-            int b;
-            int i;
-            unsigned int r[8];
-            unsigned int c[4];
-            unsigned int e[4];
-            unsigned int np;
-            unsigned int ns;
-            unsigned int nx;
-        } sn76489;
-        struct AY8910 {
-            int clocks;
-            unsigned char latch;
-            unsigned char tmask[3];
-            unsigned char nmask[3];
-            unsigned char reserved[5];
-            unsigned char reg[0x20];
-            unsigned int count[3];
-            unsigned int volume[3];
-            unsigned int freq[3];
-            unsigned int edge[3];
-            struct Envelope {
-                unsigned int volume;
-                unsigned int ptr;
-                unsigned int face;
-                unsigned int cont;
-                unsigned int attack;
-                unsigned int alternate;
-                unsigned int hold;
-                unsigned int pause;
-                unsigned int reset;
-                unsigned int freq;
-                unsigned int count;
-                unsigned int reserved;
-            } env;
-            struct Noise {
-                unsigned int seed;
-                unsigned int count;
-                unsigned int freq;
-                unsigned int reserved;
-            } noise;
-            short ch_out[4];
-        } ay8910;
-        unsigned int psgClock;
-        unsigned char psgLevels[16];
+        SN76489 sn76489;
+        AY8910 ay8910;
         struct MemoryRegister {
             unsigned char page[4];
             unsigned char slot[4]; // E * * * - B B E E
@@ -133,11 +92,6 @@ class TinyMSX {
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
-        inline void psgLatch(unsigned char value);
-        inline void psgWrite(unsigned char value);
-        inline unsigned char psgRead();
-        inline void sn76489Calc(short* left, short* right);
-        inline short ay8910Calc();
         inline void psgExec(int clocks);
         inline void changeMemoryMap(int page, unsigned char map);
         inline void consumeClock(int clocks);
