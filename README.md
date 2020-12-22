@@ -1,8 +1,8 @@
 # [WIP] TinyMSX
 
-|          Screenshot 1           |          Screenshot 2           |
-| :-----------------------------: | :-----------------------------: |
-| ![1](doc/image/screenshot1.png) | ![3](doc/image/screenshot3.png) |
+|                   SG-1000                   |             Othello MultiVision              |                  MSX1                  |
+| :-----------------------------------------: | :------------------------------------------: | :------------------------------------: |
+| ![SG-1000](doc/image/screenshot_sg1000.png) | ![OTHELLO](doc/image/screenshot_othello.png) | ![MSX1](doc/image/screenshot_msx1.png) |
 
 ## WIP status
 
