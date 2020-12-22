@@ -84,9 +84,9 @@ void TinyMSX::reset()
         this->ay8910.reset();
         this->slots.reset();
         this->slots.add(0, 0, this->bios.main, true);
-        this->slots.add(0, 1, this->bios.main, true);
-        this->slots.add(0, 2, this->bios.main, true);
-        this->slots.add(0, 2, this->bios.main, true);
+        this->slots.add(0, 1, this->bios.logo, true);
+        //this->slots.add(0, 2, this->bios.main, true);
+        //this->slots.add(0, 2, this->bios.main, true);
         this->slots.add(1, 0, this->rom, true);
         if (0x4000 < this->romSize) this->slots.add(1, 1, &this->rom[0x4000], true);
         if (0x8000 < this->romSize) this->slots.add(1, 2, &this->rom[0x8000], true);
