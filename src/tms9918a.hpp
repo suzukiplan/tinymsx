@@ -1,4 +1,30 @@
 
+/**
+ * SUZUKI PLAN - TinyMSX - TMS9918A Emulator
+ * -----------------------------------------------------------------------------
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2020 Yoji Suzuki.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ * -----------------------------------------------------------------------------
+ */
 #ifndef INCLUDE_TMS9918A_HPP
 #define INCLUDE_TMS9918A_HPP
 
@@ -19,6 +45,8 @@ class TMS9918A
     struct Context {
         int countH;
         int countV;
+        int proceed;
+        int reserved;
         unsigned char ram[0x4000];
         unsigned char reg[8];
         unsigned char tmpAddr[2];
@@ -32,12 +60,6 @@ class TMS9918A
     {
         memset(palette, 0, sizeof(palette));
         this->reset();
-    }
-
-    void reset()
-    {
-        memset(display, 0, sizeof(display));
-        memset(&ctx, 0, sizeof(ctx));
     }
 
     void initialize(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
@@ -68,6 +90,12 @@ class TMS9918A
         }
     }
 
+    void reset()
+    {
+        memset(display, 0, sizeof(display));
+        memset(&ctx, 0, sizeof(ctx));
+    }
+
     inline int getVideoMode()
     {
         if (ctx.reg[1] & 0b00010000) return 1; // Mode 1
@@ -83,13 +111,18 @@ class TMS9918A
 
     inline void tick()
     {
-        this->ctx.countH++;
-        if (342 <= this->ctx.countH) {
-            this->ctx.countH -= 342;
-            this->drawScanline(this->ctx.countV++);
-            if (262 <= this->ctx.countV) {
-                this->ctx.countV -= 262;
-                this->detectBreak(this->arg);
+        this->ctx.proceed += 279365;
+        while (186003 <= this->ctx.proceed) {
+            this->ctx.proceed -= 186003;
+            this->ctx.countH++;
+            if (342 == this->ctx.countH) {
+                this->ctx.countH -= 342;
+                this->renderScanline(this->ctx.countV - 13);
+                this->ctx.countV++;
+                if (262 == this->ctx.countV) {
+                    this->ctx.countV -= 262;
+                    this->detectBreak(this->arg); // end tick signal
+                }
             }
         }
     }
@@ -134,24 +167,24 @@ class TMS9918A
         }
     }
 
-    inline void drawScanline(int lineNumber)
+private:
+    inline void renderScanline(int lineNumber)
     {
-        if (lineNumber < 192) {
+        if (0 <= lineNumber && lineNumber < 192) {
             switch (this->getVideoMode()) {
-                case 0: this->drawScanlineMode0(lineNumber); break;
-                case 1: this->drawEmptyScanline(lineNumber); break;
-                case 2: this->drawScanlineMode2(lineNumber); break;
-                case 4: this->drawScanlineMode3(lineNumber); break;
-                default: this->drawEmptyScanline(lineNumber);
+                case 0: this->renderScanlineMode0(lineNumber); break;
+                case 1: this->renderEmptyScanline(lineNumber); break;
+                case 2: this->renderScanlineMode2(lineNumber); break;
+                case 3: this->renderScanlineMode3(lineNumber); break;
+                default: this->renderEmptyScanline(lineNumber);
             }
-            if (191 == lineNumber) {
-                this->ctx.stat |= 0x80;
-                this->detectBlank(this->arg);
-            }
+        }
+        if (191 == lineNumber) {
+            this->ctx.stat |= 0x80;
+            this->detectBlank(this->arg);
         }
     }
 
-  private:
     inline void updateAddress()
     {
         this->ctx.addr = this->ctx.tmpAddr[1];
@@ -171,7 +204,7 @@ class TMS9918A
         this->ctx.reg[this->ctx.tmpAddr[1] & 0b00001111] = this->ctx.tmpAddr[0];
     }
 
-    inline void drawScanlineMode0(int lineNumber)
+    inline void renderScanlineMode0(int lineNumber)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
         int ct = this->ctx.reg[3] << 6;
@@ -197,10 +230,10 @@ class TMS9918A
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        drawSprites(lineNumber);
+        renderSprites(lineNumber);
     }
 
-    inline void drawScanlineMode2(int lineNumber)
+    inline void renderScanlineMode2(int lineNumber)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
         int ct = (this->ctx.reg[3] & 0b10000000) << 6;
@@ -233,16 +266,16 @@ class TMS9918A
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        drawSprites(lineNumber);
+        renderSprites(lineNumber);
     }
 
-    inline void drawScanlineMode3(int lineNumber)
+    inline void renderScanlineMode3(int lineNumber)
     {
         // todo: draw Mode 3 characters
-        drawSprites(lineNumber);
+        renderSprites(lineNumber);
     }
 
-    inline void drawEmptyScanline(int lineNumber)
+    inline void renderEmptyScanline(int lineNumber)
     {
         int bd = this->ctx.reg[7] & 0b00001111;
         int cur = lineNumber * 256;
@@ -251,7 +284,7 @@ class TMS9918A
         }
     }
 
-    inline void drawSprites(int lineNumber)
+    inline void renderSprites(int lineNumber)
     {
         static const unsigned char bit[8] = {
             0b10000000,

@@ -403,7 +403,6 @@ inline void TinyMSX::consumeClock(int clocks)
     this->psgExec(clocks);
     while (clocks--) {
         this->vdp.tick();
-        this->vdp.tick();
     }
 }
 
