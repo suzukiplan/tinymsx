@@ -125,16 +125,16 @@ int main(int argc, char* argv[])
         int pn = msx->cpu->reg.PC / 0x4000;
         printf("%08d %3d (VI:%02X) (%d-%d %d-%d, %d-%d, %d-%d) %s\n",
                ++count,
-               msx->ir.lineNumber,
-               msx->getVideoMode(),
-               msx->getSlotNumber(0),
-               msx->getExtSlotNumber(0),
-               msx->getSlotNumber(1),
-               msx->getExtSlotNumber(1),
-               msx->getSlotNumber(2),
-               msx->getExtSlotNumber(2),
-               msx->getSlotNumber(3),
-               msx->getExtSlotNumber(3),
+               msx->vdp.ctx.countV,
+               msx->vdp.getVideoMode(),
+               msx->slots.getPrimarySlotNumber(0),
+               msx->slots.getSecondarySlotNumber(0),
+               msx->slots.getPrimarySlotNumber(1),
+               msx->slots.getSecondarySlotNumber(1),
+               msx->slots.getPrimarySlotNumber(2),
+               msx->slots.getSecondarySlotNumber(2),
+               msx->slots.getPrimarySlotNumber(3),
+               msx->slots.getSecondarySlotNumber(3),
                msg);
     });
 #if 0
@@ -148,44 +148,44 @@ int main(int argc, char* argv[])
         msx.tick(0xFF, 0xFF);
     }
     if (bmp) {
-        saveBitmap(bmp, msx.display, 256, 192);
+        saveBitmap(bmp, msx.vdp.display, 256, 192);
     }
 
     {
         FILE* fp = fopen("vdp.dmp", "wb");
         if (fp) {
-            switch (msx.getVideoMode()) {
+            switch (msx.vdp.getVideoMode()) {
                 case 2: {
-                    unsigned short pn = ((int)(msx.vdp.reg[2] & 0b00001111)) << 10;
-                    unsigned short ct = ((int)(msx.vdp.reg[3] & 0b10000000)) << 6;
-                    unsigned short pg = ((int)(msx.vdp.reg[4] & 0b00000100)) << 11;
-                    unsigned short sa = ((int)(msx.vdp.reg[5] & 0b01111111)) << 7;
-                    unsigned short sg = ((int)(msx.vdp.reg[6] & 0b00000111)) << 11;
-                    fprintf(fp, "Video MODE: $%02X\n", msx.getVideoMode());
-                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.reg[7] / 16, msx.vdp.reg[7] % 16);
+                    unsigned short pn = ((int)(msx.vdp.ctx.reg[2] & 0b00001111)) << 10;
+                    unsigned short ct = ((int)(msx.vdp.ctx.reg[3] & 0b10000000)) << 6;
+                    unsigned short pg = ((int)(msx.vdp.ctx.reg[4] & 0b00000100)) << 11;
+                    unsigned short sa = ((int)(msx.vdp.ctx.reg[5] & 0b01111111)) << 7;
+                    unsigned short sg = ((int)(msx.vdp.ctx.reg[6] & 0b00000111)) << 11;
+                    fprintf(fp, "Video MODE: $%02X\n", 2);
+                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.ctx.reg[7] / 16, msx.vdp.ctx.reg[7] % 16);
                     fprintf(fp, "PN: $%04X  CT: $%04X  PG: $%04X  SA: $%04X  SG: $%04X\n", pn, ct, pg, sa, sg);
-                    print_dump(fp, "Pattern Name Table", msx.vdp.ram, pn, 768);
-                    print_dump(fp, "Color Table", msx.vdp.ram, ct, 6144);
-                    print_dump(fp, "Character Pattern Generator", msx.vdp.ram, pg, 6144);
-                    print_dump(fp, "Sprite Attribute", msx.vdp.ram, sa, 128);
-                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ram, sg, 2048);
+                    print_dump(fp, "Pattern Name Table", msx.vdp.ctx.ram, pn, 768);
+                    print_dump(fp, "Color Table", msx.vdp.ctx.ram, ct, 6144);
+                    print_dump(fp, "Character Pattern Generator", msx.vdp.ctx.ram, pg, 6144);
+                    print_dump(fp, "Sprite Attribute", msx.vdp.ctx.ram, sa, 128);
+                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ctx.ram, sg, 2048);
                     break;
                 }
                 default: {
                     // dump as Mode 0
-                    unsigned short pn = ((int)(msx.vdp.reg[2] & 0b00001111)) << 10;
-                    unsigned short ct = ((int)msx.vdp.reg[3]) << 6;
-                    unsigned short pg = ((int)(msx.vdp.reg[4] & 0b00000111)) << 11;
-                    unsigned short sa = ((int)(msx.vdp.reg[5] & 0b01111111)) << 7;
-                    unsigned short sg = ((int)(msx.vdp.reg[6] & 0b00000111)) << 11;
-                    fprintf(fp, "Video MODE: $%02X\n", msx.getVideoMode());
-                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.reg[7] / 16, msx.vdp.reg[7] % 16);
+                    unsigned short pn = ((int)(msx.vdp.ctx.reg[2] & 0b00001111)) << 10;
+                    unsigned short ct = ((int)msx.vdp.ctx.reg[3]) << 6;
+                    unsigned short pg = ((int)(msx.vdp.ctx.reg[4] & 0b00000111)) << 11;
+                    unsigned short sa = ((int)(msx.vdp.ctx.reg[5] & 0b01111111)) << 7;
+                    unsigned short sg = ((int)(msx.vdp.ctx.reg[6] & 0b00000111)) << 11;
+                    fprintf(fp, "Video MODE: $%02X\n", msx.vdp.getVideoMode());
+                    fprintf(fp, "TC: $%X, BD: $%X\n", msx.vdp.ctx.reg[7] / 16, msx.vdp.ctx.reg[7] % 16);
                     fprintf(fp, "PN: $%04X  CT: $%04X  PG: $%04X  SA: $%04X  SG: $%04X\n", pn, ct, pg, sa, sg);
-                    print_dump(fp, "Pattern Name Table", msx.vdp.ram, pn, 768);
-                    print_dump(fp, "Color Table", msx.vdp.ram, ct, 32);
-                    print_dump(fp, "Character Pattern Generator", msx.vdp.ram, pg, 2048);
-                    print_dump(fp, "Sprite Attribute", msx.vdp.ram, sa, 128);
-                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ram, sg, 2048);
+                    print_dump(fp, "Pattern Name Table", msx.vdp.ctx.ram, pn, 768);
+                    print_dump(fp, "Color Table", msx.vdp.ctx.ram, ct, 32);
+                    print_dump(fp, "Character Pattern Generator", msx.vdp.ctx.ram, pg, 2048);
+                    print_dump(fp, "Sprite Attribute", msx.vdp.ctx.ram, sa, 128);
+                    print_dump(fp, "Sprite Pattern Generator", msx.vdp.ctx.ram, sg, 2048);
                 }
             }
             fclose(fp);
