@@ -89,6 +89,7 @@ class TinyMSX {
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
         inline void psgExec(int clocks);
+        inline void vdpExec(int clocks);
         inline void consumeClock(int clocks);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
         size_t calcAvairableRamSize();
