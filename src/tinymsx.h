@@ -54,7 +54,7 @@ class TinyMSX {
         SN76489 sn76489;
         AY8910 ay8910;
         struct MemoryRegister {
-            unsigned char portAA; // keyboard position
+            unsigned char ports[0x100];
         } mem;
         unsigned char ram[0x8000];
         MsxSlot slots;

@@ -71,7 +71,7 @@ void TinyMSX::reset()
 {
     memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     this->vdp.reset();
-    memset(&this->mem, 0, sizeof(this->mem));
+    memset(&this->mem, 0xFF, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
@@ -264,8 +264,8 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xE3: // unknown (read from Othello Multivision BIOS)
                 return 0xFF;
             default:
-                printf("unknown input port $%02X\n", port);
-                exit(-1);
+                printf("ignore an unknown input port $%02X\n", port);
+                return this->mem.ports[port];
         }
     } else if (this->isMSX1()) {
         switch (port) {
@@ -291,12 +291,12 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                     0b10000000};
                 unsigned char result = 0;
                 if (this->pad[0] & 0b01000000) {
-                    if ((this->mem.portAA & 0x0F) == this->specialKeyY[0]) {
+                    if ((this->mem.ports[0xAA] & 0x0F) == this->specialKeyY[0]) {
                         result |= bit[this->specialKeyX[0]];
                     }
                 }
                 if (this->pad[0] & 0b10000000) {
-                    if ((this->mem.portAA & 0x0F) == this->specialKeyY[1]) {
+                    if ((this->mem.ports[0xAA] & 0x0F) == this->specialKeyY[1]) {
                         result |= bit[this->specialKeyX[1]];
                     }
                 }
@@ -304,8 +304,8 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             }
             case 0xAA: return 0xFF;
             default:
-                printf("unknown input port $%02X\n", port);
-                exit(-1);
+                printf("ignore an unknown input port $%02X\n", port);
+                return this->mem.ports[port];
         }
     }
     return 0;
@@ -313,6 +313,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
 
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
+    this->mem.ports[port] = value;
     if (this->isSG1000()) {
         switch (port) {
             case 0x7E:
@@ -329,8 +330,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             case 0xDF: // keyboard port (ignore)
                 break;
             default:
-                printf("unknown out port $%02X <- $%02X\n", port, value);
-                exit(-1);
+                printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     } else if (this->isMSX1()) {
         switch (port) {
@@ -350,7 +350,6 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->slots.changePrimarySlots(value);
                 break;
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
-                this->mem.portAA = value;
                 break;
             case 0xAB: // to access the ports control register. (Write only)
                 break;
@@ -359,8 +358,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             case 0xFE: this->slots.setupPage(1, value); break;
             case 0xFF: this->slots.setupPage(0, value); break;
             default:
-                printf("unknown out port $%02X <- $%02X\n", port, value);
-                exit(-1);
+                printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
 }
