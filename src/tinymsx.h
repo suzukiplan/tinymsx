@@ -56,7 +56,7 @@ class TinyMSX {
         struct MemoryRegister {
             unsigned char portAA; // keyboard position
         } mem;
-        unsigned char ram[0x4000];
+        unsigned char ram[0x8000];
         MsxSlot slots;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, int colorMode);

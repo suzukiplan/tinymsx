@@ -122,7 +122,7 @@ class TMS9918A
                 this->detectBreak(this->arg);
             }
         }
-        if (340 == this->ctx.countH && 215 == this->ctx.countV) {
+        if (256 == this->ctx.countH && 215 == this->ctx.countV) {
             this->ctx.stat |= 0x80;
             this->detectBlank(this->arg);
         }

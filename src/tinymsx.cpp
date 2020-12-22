@@ -39,7 +39,7 @@
 #define STATE_CHUNK_MEM "MR"
 #define STATE_CHUNK_SLT "SL"
 
-static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0); }
+static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
 
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
@@ -85,21 +85,22 @@ void TinyMSX::reset()
         this->slots.reset();
         this->slots.add(0, 0, this->bios.main, true);
         this->slots.add(0, 1, this->bios.main, true);
-        //this->slots.add(0, 1, &this->bios.main[0x4000], true);
+        this->slots.add(0, 2, this->bios.main, true);
+        this->slots.add(0, 2, this->bios.main, true);
         this->slots.add(1, 0, this->rom, true);
         if (0x4000 < this->romSize) this->slots.add(1, 1, &this->rom[0x4000], true);
         if (0x8000 < this->romSize) this->slots.add(1, 2, &this->rom[0x8000], true);
         if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
         //this->slots.add(3, 0, this->bios.logo, true);
-        this->slots.add(3, 3, this->ram, false);
+        this->slots.add(3, 0, this->ram, false);
         this->slots.setupPage(0, 0);          // page 0 = slot 0
         this->slots.setupPage(1, 1);          // page 1 = slot 1
         this->slots.setupPage(2, 1);          // page 2 = slot 2
         this->slots.setupPage(3, 3);          // page 3 = slot 3
-        this->slots.setupSlot(0, 0b10000000); // slot 0 = slot 0-0
-        this->slots.setupSlot(1, 0b10000001); // slot 1 = slot 1-0
-        this->slots.setupSlot(2, 0b10000101); // slot 2 = slot 1-1
-        this->slots.setupSlot(3, 0b10001111); // slot 3 = slot 3-3
+        this->slots.setupSlot(0, 0b00000000); // slot 0 = slot 0-0
+        this->slots.setupSlot(1, 0b00000001); // slot 1 = slot 1-0
+        this->slots.setupSlot(2, 0b00000001); // slot 2 = slot 1-0
+        this->slots.setupSlot(3, 0b00000011); // slot 3 = slot 3-0
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
@@ -107,7 +108,7 @@ void TinyMSX::reset()
 
 unsigned short TinyMSX::getInitAddr()
 {
-#if 0
+#if 1
     return 0;
 #else
     if (this->isMSX1()) {

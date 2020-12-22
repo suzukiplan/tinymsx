@@ -27,6 +27,7 @@
 #ifndef INCLUDE_MSXSLOT_HPP
 #define INCLUDE_MSXSLOT_HPP
 
+#include <stdio.h>
 #include <string.h>
 
 class MsxSlot
@@ -76,6 +77,9 @@ class MsxSlot
 
     inline void changePrimarySlots(unsigned char value)
     {
+#ifdef DEBUG
+        unsigned char previous = this->readPrimaryStatus();
+#endif
         for (int i = 0; i < 4; i++) {
             this->ctx.slot[i] &= 0b11111100;
         }
@@ -83,6 +87,12 @@ class MsxSlot
         this->ctx.slot[2] |= value >> 4 & 3;
         this->ctx.slot[1] |= value >> 2 & 3;
         this->ctx.slot[0] |= value & 3;
+#ifdef DEBUG
+        unsigned char current = this->readPrimaryStatus();
+        if (previous != current) {
+            printf("Primary Slot Changed: %d-%d:%d-%d:%d-%d:%d-%d\n", getPrimarySlotNumber(0), getSecondarySlotNumber(0), getPrimarySlotNumber(1), getSecondarySlotNumber(1), getPrimarySlotNumber(2), getSecondarySlotNumber(2), getPrimarySlotNumber(3), getSecondarySlotNumber(3));
+        }
+#endif
     }
 
     inline unsigned char readSecondaryStatus()
@@ -97,18 +107,27 @@ class MsxSlot
 
     inline void changeSecondarySlots(unsigned char value)
     {
-        this->setSecondaryPage(0, value & 0b00000011);
-        this->setSecondaryPage(1, value & 0b00001100 >> 2);
-        this->setSecondaryPage(2, value & 0b00110000 >> 4);
-        this->setSecondaryPage(3, value & 0b11000000 >> 6);
+#ifdef DEBUG
+        unsigned char previous = this->readSecondaryStatus();
+#endif
+        this->changeSecondarySlot(0, value & 0b00000011);
+        this->changeSecondarySlot(1, value & 0b00001100 >> 2);
+        this->changeSecondarySlot(2, value & 0b00110000 >> 4);
+        this->changeSecondarySlot(3, value & 0b11000000 >> 6);
+#ifdef DEBUG
+        unsigned char current = this->readSecondaryStatus();
+        if (previous != current) {
+            printf("Secondary Slot Changed: %d-%d:%d-%d:%d-%d:%d-%d\n", getPrimarySlotNumber(0), getSecondarySlotNumber(0), getPrimarySlotNumber(1), getSecondarySlotNumber(1), getPrimarySlotNumber(2), getSecondarySlotNumber(2), getPrimarySlotNumber(3), getSecondarySlotNumber(3));
+        }
+#endif
     }
 
-    inline void setSecondaryPage(int slot, int extra)
+    inline void changeSecondarySlot(int pn, int sn)
     {
-        if (this->hasSlot(slot, extra)) {
-            this->ctx.slot[slot] &= 0b11110011;
-            this->ctx.slot[slot] |= extra ? 0x80 : 0;
-            this->ctx.slot[slot] |= extra << 2;
+        if (this->hasSlot(pn, sn)) {
+            this->ctx.slot[pn] &= 0b11110011;
+            this->ctx.slot[pn] |= sn ? 0x80 : 0;
+            this->ctx.slot[pn] |= sn << 2;
         }
     }
 
@@ -120,36 +139,13 @@ class MsxSlot
         int pn = addr / 0x4000;
         int ps = this->getPrimarySlotNumber(pn);
         int ss = this->getSecondarySlotNumber(pn);
-        switch (pn) {
-            case 0:
-            case 1:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    ss++;
-                }
-                break;
-            case 2:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    if (ps == this->getPrimarySlotNumber(pn - 2) && ss == this->getSecondarySlotNumber(pn - 2)) {
-                        ss += 2;
-                    } else {
-                        ss++;
-                    }
-                }
-                break;
-            case 3:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    if (ps == this->getPrimarySlotNumber(pn - 2) && ss == this->getSecondarySlotNumber(pn - 2)) {
-                        if (ps == this->getPrimarySlotNumber(pn - 3) && ss == this->getSecondarySlotNumber(pn - 3)) {
-                            ss += 3;
-                        } else {
-                            ss += 2;
-                        }
-                    } else {
-                        ss++;
-                    }
-                }
-                break;
+        int sa = 0;
+        for (int i = 0; i < pn; i++) {
+            if (ps == this->getPrimarySlotNumber(i) && ss == this->getSecondarySlotNumber(i)) {
+                sa++;
+            }
         }
+        ss += sa;
         return this->read(ps & 3, ss & 3, addr);
     }
 
@@ -163,37 +159,14 @@ class MsxSlot
         int pn = addr / 0x4000;
         int ps = this->getPrimarySlotNumber(pn);
         int ss = this->getSecondarySlotNumber(pn);
-        switch (pn) {
-            case 0:
-            case 1:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    ss++;
-                }
-                break;
-            case 2:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    if (ps == this->getPrimarySlotNumber(pn - 2) && ss == this->getSecondarySlotNumber(pn - 2)) {
-                        ss += 2;
-                    } else {
-                        ss++;
-                    }
-                }
-                break;
-            case 3:
-                if (ps == this->getPrimarySlotNumber(pn - 1) && ss == this->getSecondarySlotNumber(pn - 1)) {
-                    if (ps == this->getPrimarySlotNumber(pn - 2) && ss == this->getSecondarySlotNumber(pn - 2)) {
-                        if (ps == this->getPrimarySlotNumber(pn - 3) && ss == this->getSecondarySlotNumber(pn - 3)) {
-                            ss += 3;
-                        } else {
-                            ss += 2;
-                        }
-                    } else {
-                        ss++;
-                    }
-                }
-                break;
+        int sa = 0;
+        for (int i = 0; i < pn; i++) {
+            if (ps == this->getPrimarySlotNumber(i) && ss == this->getSecondarySlotNumber(i)) {
+                sa++;
+            }
         }
-        this->write(ps, ss, addr, value);
+        ss += sa;
+        this->write(ps & 3, ss & 3, addr, value);
     }
 
     inline void write(int ps, int ss, unsigned short addr, unsigned char value)
