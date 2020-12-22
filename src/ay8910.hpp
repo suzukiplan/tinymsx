@@ -41,7 +41,7 @@ class AY8910
 
   public:
     struct Context {
-        int clocks;
+        int bobo;
         unsigned char latch;
         unsigned char tmask[3];
         unsigned char nmask[3];

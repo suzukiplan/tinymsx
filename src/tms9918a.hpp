@@ -43,9 +43,9 @@ class TMS9918A
     unsigned short palette[16];
 
     struct Context {
+        int bobo;
         int countH;
         int countV;
-        int proceed;
         int reserved;
         unsigned char ram[0x4000];
         unsigned char reg[8];
@@ -88,6 +88,7 @@ class TMS9918A
             default:
                 memset(this->palette, 0, sizeof(this->palette));
         }
+        this->reset();
     }
 
     void reset()
@@ -111,19 +112,19 @@ class TMS9918A
 
     inline void tick()
     {
-        this->ctx.proceed += 279365;
-        while (186003 <= this->ctx.proceed) {
-            this->ctx.proceed -= 186003;
-            this->ctx.countH++;
-            if (342 == this->ctx.countH) {
-                this->ctx.countH -= 342;
-                this->renderScanline(this->ctx.countV - 13);
-                this->ctx.countV++;
-                if (262 == this->ctx.countV) {
-                    this->ctx.countV -= 262;
-                    this->detectBreak(this->arg); // end tick signal
-                }
+        this->ctx.countH++;
+        if (342 == this->ctx.countH) {
+            this->ctx.countH -= 342;
+            this->renderScanline(this->ctx.countV - 13);
+            this->ctx.countV++;
+            if (262 == this->ctx.countV) {
+                this->ctx.countV -= 262;
+                this->detectBreak(this->arg);
             }
+        }
+        if (340 == this->ctx.countH && 215 == this->ctx.countV) {
+            this->ctx.stat |= 0x80;
+            this->detectBlank(this->arg);
         }
     }
 
@@ -167,7 +168,7 @@ class TMS9918A
         }
     }
 
-private:
+  private:
     inline void renderScanline(int lineNumber)
     {
         if (0 <= lineNumber && lineNumber < 192) {
@@ -178,10 +179,6 @@ private:
                 case 3: this->renderScanlineMode3(lineNumber); break;
                 default: this->renderEmptyScanline(lineNumber);
             }
-        }
-        if (191 == lineNumber) {
-            this->ctx.stat |= 0x80;
-            this->detectBlank(this->arg);
         }
     }
 

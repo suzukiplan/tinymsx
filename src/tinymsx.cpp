@@ -28,6 +28,8 @@
 #include <string.h>
 
 #define CPU_RATE 3579545
+#define VDP_RATE 5376240
+#define SAMPLE_RATE 44100
 
 #define STATE_CHUNK_CPU "CP"
 #define STATE_CHUNK_RAM "RA"
@@ -77,7 +79,7 @@ void TinyMSX::reset()
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
-        this->sn76489.reset(CPU_RATE);
+        this->sn76489.reset(CPU_RATE, SAMPLE_RATE);
     } else if (this->isMSX1()) {
         this->ay8910.reset();
         this->slots.reset();
@@ -381,28 +383,35 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 inline void TinyMSX::psgExec(int clocks)
 {
     if (this->isSG1000()) {
-        this->sn76489.ctx.b += clocks * SAMPLE_RATE;
-        while (0 <= this->sn76489.ctx.b) {
-            this->sn76489.ctx.b -= CPU_RATE;
+        this->sn76489.ctx.bobo += clocks * SAMPLE_RATE;
+        while (0 <= this->sn76489.ctx.bobo) {
+            this->sn76489.ctx.bobo -= CPU_RATE;
             this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
-        this->ay8910.ctx.clocks += clocks * SAMPLE_RATE;
-        while (0 <= this->ay8910.ctx.clocks) {
-            this->ay8910.ctx.clocks -= CPU_RATE;
+        this->ay8910.ctx.bobo += clocks * SAMPLE_RATE;
+        while (0 <= this->ay8910.ctx.bobo) {
+            this->ay8910.ctx.bobo -= CPU_RATE;
             this->ay8910.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     }
 }
 
+inline void TinyMSX::vdpExec(int clocks)
+{
+    this->vdp.ctx.bobo += clocks * VDP_RATE;
+    while (0 <= this->vdp.ctx.bobo) {
+        this->vdp.ctx.bobo -= CPU_RATE;
+        this->vdp.tick();
+    }
+}
+
 inline void TinyMSX::consumeClock(int clocks)
 {
     this->psgExec(clocks);
-    while (clocks--) {
-        this->vdp.tick();
-    }
+    this->vdpExec(clocks);
 }
 
 inline void TinyMSX::initBIOS()

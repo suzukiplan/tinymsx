@@ -28,7 +28,6 @@
 #define INCLUDE_SN76489_HPP
 
 #include <string.h>
-#define SAMPLE_RATE 44100.0
 #define PSG_SHIFT 16
 
 class SN76489
@@ -39,7 +38,7 @@ class SN76489
 
   public:
     struct Context {
-        int b;
+        int bobo;
         int i;
         unsigned int r[8];
         unsigned int c[4];
@@ -49,10 +48,10 @@ class SN76489
         unsigned int nx;
     } ctx;
 
-    void reset(int cpuRate)
+    void reset(int cpuRate, int sampleRate)
     {
         memset(&ctx, 0, sizeof(ctx));
-        this->clock = cpuRate / SAMPLE_RATE * (1 << PSG_SHIFT);
+        this->clock = cpuRate / ((double)sampleRate) * (1 << PSG_SHIFT);
         unsigned char levels[16] = {255, 180, 127, 90, 63, 44, 31, 22, 15, 10, 7, 5, 3, 2, 1, 0};
         memcpy(this->levels, &levels, sizeof(levels));
     }
