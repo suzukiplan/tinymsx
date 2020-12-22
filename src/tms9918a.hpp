@@ -105,6 +105,10 @@ class TMS9918A
         return 0;                              // Mode 0
     }
 
+    inline int getVramSize() { return 1024 * (ctx.reg[1] & 0b10000000 ? 16 : 4); }
+    inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
+    inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
+
     inline unsigned short getBackdropColor()
     {
         return palette[ctx.reg[7] & 0b00001111];
@@ -115,14 +119,14 @@ class TMS9918A
         this->ctx.countH++;
         if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
-            this->renderScanline(this->ctx.countV - 13);
+            this->renderScanline(this->ctx.countV);
             this->ctx.countV++;
             if (262 == this->ctx.countV) {
                 this->ctx.countV -= 262;
                 this->detectBreak(this->arg);
             }
         }
-        if (256 == this->ctx.countH && 215 == this->ctx.countV) {
+        if (256 == this->ctx.countH && 215 == this->ctx.countV && this->isEnabledInterrupt()) {
             this->ctx.stat |= 0x80;
             this->detectBlank(this->arg);
         }
@@ -172,12 +176,16 @@ class TMS9918A
     inline void renderScanline(int lineNumber)
     {
         if (0 <= lineNumber && lineNumber < 192) {
-            switch (this->getVideoMode()) {
-                case 0: this->renderScanlineMode0(lineNumber); break;
-                case 1: this->renderEmptyScanline(lineNumber); break;
-                case 2: this->renderScanlineMode2(lineNumber); break;
-                case 3: this->renderScanlineMode3(lineNumber); break;
-                default: this->renderEmptyScanline(lineNumber);
+            if (this->isEnabledScreen()) {
+                switch (this->getVideoMode()) {
+                    case 0: this->renderScanlineMode0(lineNumber); break;
+                    case 1: this->renderEmptyScanline(lineNumber); break;
+                    case 2: this->renderScanlineMode2(lineNumber); break;
+                    case 3: this->renderScanlineMode3(lineNumber); break;
+                    default: this->renderEmptyScanline(lineNumber);
+                }
+            } else {
+                this->renderEmptyScanline(lineNumber);
             }
         }
     }
@@ -198,7 +206,34 @@ class TMS9918A
 
     inline void updateRegister()
     {
+#ifdef DEBUG
+        int previousMode = 0;
+        if (ctx.reg[1] & 0b00010000) previousMode |= 1; // Mode 1
+        if (ctx.reg[0] & 0b00000010) previousMode |= 2; // Mode 2
+        if (ctx.reg[1] & 0b00001000) previousMode |= 4; // Mode 3
+        int vramSize = getVramSize();
+        bool screen = this->isEnabledScreen();
+        bool interrupt = this->isEnabledInterrupt();
+#endif
         this->ctx.reg[this->ctx.tmpAddr[1] & 0b00001111] = this->ctx.tmpAddr[0];
+#ifdef DEBUG
+        int currentMode = 0;
+        if (ctx.reg[1] & 0b00010000) currentMode |= 1; // Mode 1
+        if (ctx.reg[0] & 0b00000010) currentMode |= 2; // Mode 2
+        if (ctx.reg[1] & 0b00001000) currentMode |= 4; // Mode 3
+        if (previousMode != currentMode) {
+            printf("Change display mode: %d -> %d\n", previousMode, currentMode);
+        }
+        if (vramSize != getVramSize()) {
+            printf("Change VDP RAM size: %d -> %d\n", vramSize, getVramSize());
+        }
+        if (screen != this->isEnabledScreen()) {
+            printf("Change VDP screen enabled: %s\n", this->isEnabledScreen() ? "ENABLED" : "DISABLED");
+        }
+        if (interrupt != this->isEnabledInterrupt()) {
+            printf("Change VDP interrupt enabled: %s\n", this->isEnabledInterrupt() ? "ENABLED" : "DISABLED");
+        }
+#endif
     }
 
     inline void renderScanlineMode0(int lineNumber)
