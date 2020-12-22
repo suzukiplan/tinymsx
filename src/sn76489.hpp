@@ -28,7 +28,6 @@
 #define INCLUDE_SN76489_HPP
 
 #include <string.h>
-#define PSG_SHIFT 16
 
 class SN76489
 {
@@ -51,7 +50,7 @@ class SN76489
     void reset(int cpuRate, int sampleRate)
     {
         memset(&ctx, 0, sizeof(ctx));
-        this->clock = cpuRate / ((double)sampleRate) * (1 << PSG_SHIFT);
+        this->clock = cpuRate / ((double)sampleRate) * (1 << 16);
         unsigned char levels[16] = {255, 180, 127, 90, 63, 44, 31, 22, 15, 10, 7, 5, 3, 2, 1, 0};
         memcpy(this->levels, &levels, sizeof(levels));
     }
@@ -80,7 +79,7 @@ class SN76489
             if (this->ctx.r[regidx]) {
                 unsigned int cc = this->clock + this->ctx.c[i];
                 while ((cc & 0x80000000) == 0) {
-                    cc -= (this->ctx.r[regidx] << (PSG_SHIFT + 4));
+                    cc -= (this->ctx.r[regidx] << (16 + 4));
                     this->ctx.e[i] ^= 1;
                 }
                 this->ctx.c[i] = cc;
@@ -91,7 +90,7 @@ class SN76489
         if (this->ctx.np) {
             unsigned int cc = this->clock + this->ctx.c[3];
             while ((cc & 0x80000000) == 0) {
-                cc -= (this->ctx.np << (PSG_SHIFT + 4));
+                cc -= (this->ctx.np << (16 + 4));
                 this->ctx.ns >>= 1;
                 if (this->ctx.ns & 1) {
                     this->ctx.ns = this->ctx.ns ^ this->ctx.nx;
@@ -108,9 +107,6 @@ class SN76489
         if (this->ctx.e[2]) w += this->levels[this->ctx.r[5]];
         if (this->ctx.e[3]) w += this->levels[this->ctx.r[7]];
         w <<= 4;
-        w = (short)w;
-        w *= 45;
-        w /= 10;
         if (32767 < w) {
             w = 32767;
         } else if (w < -32768) {
