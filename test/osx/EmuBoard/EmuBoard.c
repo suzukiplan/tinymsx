@@ -64,7 +64,7 @@ void emu_init(const void* rom, size_t romSize)
     tinymsx_load_bios_msx1_logo(emu_msx, emu_msx_logo, sizeof(emu_msx_logo));
     tinymsx_reset(emu_msx);
     tinymsx_setup_special_key1(emu_msx, '1', 0);
-    tinymsx_setup_special_key2(emu_msx, '2', 0);
+    tinymsx_setup_special_key2(emu_msx, ' ', 0);
     pthread_mutex_init(&sound_locker, NULL);
     spu = vgsspu_start2(44100, 16, 2, 23520, sound_callback);
     emu_initialized = 1;

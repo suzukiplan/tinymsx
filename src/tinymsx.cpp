@@ -252,6 +252,8 @@ void TinyMSX::setupSpecialKey(int n, unsigned char ascii, bool isTenKey)
             case '@': this->setupSpecialKeyV(n, 5, 1); break;
             case '[': this->setupSpecialKeyV(n, 6, 1); break;
             case '+': this->setupSpecialKeyV(n, 7, 1); break;
+            case '\n': this->setupSpecialKeyV(n, 7, 7); break;
+            case ' ': this->setupSpecialKeyV(n, 0, 8); break;
             default: this->setupSpecialKeyV(n, 255, 255); break;
         }
     }
