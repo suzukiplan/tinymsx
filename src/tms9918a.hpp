@@ -106,6 +106,7 @@ class TMS9918A
     }
 
     inline int getVramSize() { return 1024 * (ctx.reg[1] & 0b10000000 ? 16 : 4); }
+    inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
 
@@ -213,7 +214,7 @@ class TMS9918A
         if (ctx.reg[1] & 0b00001000) previousMode |= 4; // Mode 3
         int vramSize = getVramSize();
         bool screen = this->isEnabledScreen();
-        bool interrupt = this->isEnabledInterrupt();
+        bool externalVideoInput = this->isEnabledExternalVideoInput();
 #endif
         this->ctx.reg[this->ctx.tmpAddr[1] & 0b00001111] = this->ctx.tmpAddr[0];
 #ifdef DEBUG
@@ -230,8 +231,8 @@ class TMS9918A
         if (screen != this->isEnabledScreen()) {
             printf("Change VDP screen enabled: %s\n", this->isEnabledScreen() ? "ENABLED" : "DISABLED");
         }
-        if (interrupt != this->isEnabledInterrupt()) {
-            printf("Change VDP interrupt enabled: %s\n", this->isEnabledInterrupt() ? "ENABLED" : "DISABLED");
+        if (externalVideoInput != this->isEnabledExternalVideoInput()) {
+            printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
         }
 #endif
     }
