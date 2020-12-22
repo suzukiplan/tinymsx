@@ -79,17 +79,12 @@ class TinyMSX {
             this->specialKeyY[n] = y;
         }
         void setupSpecialKey(int n, unsigned char ascii, bool isTenKey);
-        inline void initBIOS();
         inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
-        inline unsigned short getInitAddr();
         inline unsigned char readMemory(unsigned short addr);
-        inline void setExtraPage(int slot, int extra);
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);
         inline void outPort(unsigned char port, unsigned char value);
-        inline void psgExec(int clocks);
-        inline void vdpExec(int clocks);
         inline void consumeClock(int clocks);
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
         size_t calcAvairableRamSize();
