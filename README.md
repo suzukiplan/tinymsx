@@ -15,7 +15,7 @@ TinyMSX is a multi-emulator core library for C/C++ that supports SG-1000, Othell
 - [ ] Emulate MSX1 mega-rom cartridge games
 - [ ] Emulate MSX2
 - [ ] Emulate MSX2+
-- [ ] Emulate MSX turboR
+- <s>Emulate MSX turboR</s>
 
 ## How to use
 
