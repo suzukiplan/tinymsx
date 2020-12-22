@@ -45,7 +45,6 @@ static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
 {
     this->type = type;
-    this->initBIOS();
     this->rom = (unsigned char*)malloc(romSize);
     if (this->rom) {
         memcpy(this->rom, rom, romSize);
@@ -56,6 +55,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
     this->vdp.initialize(colorMode, this, detectBlank, detectBreak);
+    memset(&this->bios, 0, sizeof(this->bios));
     reset();
 }
 
@@ -69,11 +69,7 @@ TinyMSX::~TinyMSX()
 
 void TinyMSX::reset()
 {
-    if (this->cpu) {
-        memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
-        this->cpu->reg.PC = this->getInitAddr();
-        printf("Init addr: $%04X\n", this->cpu->reg.PC);
-    }
+    memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     this->vdp.reset();
     memset(&this->mem, 0, sizeof(this->mem));
     memset(this->ram, 0, sizeof(this->ram));
@@ -85,38 +81,24 @@ void TinyMSX::reset()
         this->slots.reset();
         this->slots.add(0, 0, this->bios.main, true);
         this->slots.add(0, 1, this->bios.logo, true);
-        //this->slots.add(0, 2, this->bios.main, true);
-        //this->slots.add(0, 2, this->bios.main, true);
         this->slots.add(1, 0, this->rom, true);
         if (0x4000 < this->romSize) this->slots.add(1, 1, &this->rom[0x4000], true);
         if (0x8000 < this->romSize) this->slots.add(1, 2, &this->rom[0x8000], true);
         if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
-        //this->slots.add(3, 0, this->bios.logo, true);
         this->slots.add(3, 0, this->ram, false);
-        this->slots.setupPage(0, 0);          // page 0 = slot 0
-        this->slots.setupPage(1, 1);          // page 1 = slot 1
-        this->slots.setupPage(2, 1);          // page 2 = slot 2
-        this->slots.setupPage(3, 3);          // page 3 = slot 3
-        this->slots.setupSlot(0, 0b00000000); // slot 0 = slot 0-0
-        this->slots.setupSlot(1, 0b00000001); // slot 1 = slot 1-0
-        this->slots.setupSlot(2, 0b00000001); // slot 2 = slot 1-0
-        this->slots.setupSlot(3, 0b00000011); // slot 3 = slot 3-0
+        // initialize Page n = Slot n
+        this->slots.setupPage(0, 0);
+        this->slots.setupPage(1, 1);
+        this->slots.setupPage(2, 1);
+        this->slots.setupPage(3, 3);
+        // initialize default slot condition: 0-0, 1-0, 1-0, 3-0
+        this->slots.setupSlot(0, 0b00000000);
+        this->slots.setupSlot(1, 0b00000001);
+        this->slots.setupSlot(2, 0b00000001);
+        this->slots.setupSlot(3, 0b00000011);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
-}
-
-unsigned short TinyMSX::getInitAddr()
-{
-#if 1
-    return 0;
-#else
-    if (this->isMSX1()) {
-        return (this->rom[3] * 256) | this->rom[2];
-    } else {
-        return 0;
-    }
-#endif
 }
 
 void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
@@ -383,8 +365,9 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
     }
 }
 
-inline void TinyMSX::psgExec(int clocks)
+inline void TinyMSX::consumeClock(int clocks)
 {
+    // execute PSG
     if (this->isSG1000()) {
         this->sn76489.ctx.bobo += clocks * SAMPLE_RATE;
         while (0 <= this->sn76489.ctx.bobo) {
@@ -400,25 +383,12 @@ inline void TinyMSX::psgExec(int clocks)
             this->soundBufferCursor += 2;
         }
     }
-}
-
-inline void TinyMSX::vdpExec(int clocks)
-{
+    // execute VDP
     this->vdp.ctx.bobo += clocks * VDP_RATE;
     while (0 <= this->vdp.ctx.bobo) {
         this->vdp.ctx.bobo -= CPU_RATE;
         this->vdp.tick();
     }
-}
-
-inline void TinyMSX::consumeClock(int clocks)
-{
-    this->psgExec(clocks);
-    this->vdpExec(clocks);
-}
-
-inline void TinyMSX::initBIOS()
-{
 }
 
 bool TinyMSX::loadSpecificSizeFile(const char* path, void* buffer, size_t size)
