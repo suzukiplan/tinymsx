@@ -122,9 +122,11 @@ class TMS9918A
             this->ctx.countH -= 342;
             this->renderScanline(this->ctx.countV);
             this->ctx.countV++;
-            if (192 == this->ctx.countV && this->isEnabledInterrupt()) {
+            if (192 == this->ctx.countV) {
                 this->ctx.stat |= 0x80;
-                this->detectBlank(this->arg);
+                if (this->isEnabledInterrupt()) {
+                    this->detectBlank(this->arg);
+                }
             } else if (262 == this->ctx.countV) {
                 this->ctx.countV -= 262;
                 this->detectBreak(this->arg);
