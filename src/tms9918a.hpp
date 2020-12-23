@@ -109,11 +109,7 @@ class TMS9918A
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
-
-    inline unsigned short getBackdropColor()
-    {
-        return palette[ctx.reg[7] & 0b00001111];
-    }
+    inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
 
     // Execute TMS9918A 1 clock cycle (342Hz / scanline)
     //   0 ~ 255: Active display (256Hz)
@@ -324,7 +320,7 @@ class TMS9918A
 
     inline void renderEmptyScanline(int lineNumber)
     {
-        int bd = this->ctx.reg[7] & 0b00001111;
+        int bd = this->getBackdropColor();
         int cur = lineNumber * 256;
         for (int i = 0; i < 256; i++) {
             this->display[cur++] = palette[bd];
