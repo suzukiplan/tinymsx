@@ -115,19 +115,32 @@ class TMS9918A
         return palette[ctx.reg[7] & 0b00001111];
     }
 
+    // Execute TMS9918A 1 clock cycle (342Hz / scanline)
+    //   0 ~ 255: Active display (256Hz)
+    // 256 ~ 270: Right border (15Hz)
+    // 271 ~ 278: Right blanking (8Hz)
+    // 279 ~ 304: Horizontal sync (26Hz)
+    // 305 ~ 306: Left blanking (2Hz)
+    // 307 ~ 320: Color burst (14Hz)
+    // 321 ~ 328: Left blanking (8Hz)
+    // 329 ~ 341: Left border (13Hz)
     inline void tick()
     {
         this->ctx.countH++;
-        if (342 == this->ctx.countH) {
-            this->ctx.countH -= 342;
+        if (256 == this->ctx.countH) {
+            // End of Active display
             this->renderScanline(this->ctx.countV);
+        } else if (279 == this->ctx.countH && 191 == this->ctx.countV) {
+            // Start of Horizontal sync (at scanline #192)
+            this->ctx.stat |= 0x80;
+            if (this->isEnabledInterrupt()) {
+                this->detectBlank(this->arg);
+            }
+        } else if (342 == this->ctx.countH) {
+            // End of scanline
+            this->ctx.countH -= 342;
             this->ctx.countV++;
-            if (192 == this->ctx.countV) {
-                this->ctx.stat |= 0x80;
-                if (this->isEnabledInterrupt()) {
-                    this->detectBlank(this->arg);
-                }
-            } else if (262 == this->ctx.countV) {
+            if (262 == this->ctx.countV) {
                 this->ctx.countV -= 262;
                 this->detectBreak(this->arg);
             }
