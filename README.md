@@ -22,6 +22,9 @@ TinyMSX is a multi-emulator core library for C/C++ that supports following game 
     // Create an instance
     TinyMSX msx(TINYMSX_TYPE_MSX1, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
 
+    // Load main BIOS of MSX1
+    msx.loadBiosFromFile("/path/to/main-bios.rom");
+
     // Reset
     msx.reset();
 
