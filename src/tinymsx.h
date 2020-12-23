@@ -53,11 +53,9 @@ class TinyMSX {
         TMS9918A vdp;
         SN76489 sn76489;
         AY8910 ay8910;
-        struct MemoryRegister {
-            unsigned char ports[0x100];
-        } mem;
+        unsigned char io[0x100];
         unsigned char ram[0x8000];
-        MsxSlot slots;
+        MsxSlot slot;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, int colorMode);
         ~TinyMSX();

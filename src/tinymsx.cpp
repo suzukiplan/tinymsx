@@ -37,7 +37,7 @@
 #define STATE_CHUNK_VDP "VD"
 #define STATE_CHUNK_SN7 "S7"
 #define STATE_CHUNK_AY3 "A3"
-#define STATE_CHUNK_MEM "MR"
+#define STATE_CHUNK_IOS "IO"
 #define STATE_CHUNK_SLT "SL"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
@@ -72,31 +72,29 @@ void TinyMSX::reset()
 {
     memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
     this->vdp.reset();
-    memset(&this->mem, 0xFF, sizeof(this->mem));
+    memset(this->io, 0xFF, sizeof(this->io));
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
         this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
     } else if (this->isMSX1()) {
         this->ay8910.reset();
-        this->slots.reset();
-        this->slots.add(0, 0, this->bios.main, true);
-        this->slots.add(0, 1, this->bios.logo, true);
-        this->slots.add(1, 0, this->rom, true);
-        if (0x4000 < this->romSize) this->slots.add(1, 1, &this->rom[0x4000], true);
-        if (0x8000 < this->romSize) this->slots.add(1, 2, &this->rom[0x8000], true);
-        if (0xC000 < this->romSize) this->slots.add(1, 3, &this->rom[0xC000], true);
-        this->slots.add(3, 0, this->ram, false);
+        this->slot.reset();
+        this->slot.add(0, 0, this->bios.main, true);
+        this->slot.add(0, 1, this->bios.logo, true);
+        this->slot.add(1, 0, this->rom, true);
+        if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
+        this->slot.add(3, 0, this->ram, false);
         // initialize Page n = Slot n
-        this->slots.setupPage(0, 0);
-        this->slots.setupPage(1, 1);
-        this->slots.setupPage(2, 1);
-        this->slots.setupPage(3, 3);
+        this->slot.setupPage(0, 0);
+        this->slot.setupPage(1, 1);
+        this->slot.setupPage(2, 1);
+        this->slot.setupPage(3, 3);
         // initialize default slot condition: 0-0, 1-0, 1-0, 3-0
-        this->slots.setupSlot(0, 0b00000000);
-        this->slots.setupSlot(1, 0b00000001);
-        this->slots.setupSlot(2, 0b00000001);
-        this->slots.setupSlot(3, 0b00000011);
+        this->slot.setupSlot(0, 0b00000000);
+        this->slot.setupSlot(1, 0b00000001);
+        this->slot.setupSlot(2, 0b00000001);
+        this->slot.setupSlot(3, 0b00000011);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
@@ -167,7 +165,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
             return this->ram[addr & 0x1FFF];
         }
     } else if (this->isMSX1()) {
-        return 0xFFFF == addr ? this->slots.readSecondaryStatus() : this->slots.read(addr);
+        return 0xFFFF == addr ? this->slot.readSecondaryStatus() : this->slot.read(addr);
     } else {
         return 0; // unknown system
     }
@@ -185,9 +183,9 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         }
     } else if (this->isMSX1()) {
         if (0xFFFF == addr) {
-            this->slots.changeSecondarySlots(value);
+            this->slot.changeSecondarySlots(value);
         } else {
-            this->slots.write(addr, value);
+            this->slot.write(addr, value);
         }
     }
 }
@@ -266,7 +264,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 return 0xFF;
             default:
                 printf("ignore an unknown input port $%02X\n", port);
-                return this->mem.ports[port];
+                return this->io[port];
         }
     } else if (this->isMSX1()) {
         switch (port) {
@@ -277,7 +275,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xA2:
                 return this->ay8910.read();
             case 0xA8: {
-                return this->slots.readPrimaryStatus();
+                return this->slot.readPrimaryStatus();
             }
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
@@ -292,12 +290,12 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                     0b10000000};
                 unsigned char result = 0;
                 if (this->pad[0] & 0b01000000) {
-                    if ((this->mem.ports[0xAA] & 0x0F) == this->specialKeyY[0]) {
+                    if ((this->io[0xAA] & 0x0F) == this->specialKeyY[0]) {
                         result |= bit[this->specialKeyX[0]];
                     }
                 }
                 if (this->pad[0] & 0b10000000) {
-                    if ((this->mem.ports[0xAA] & 0x0F) == this->specialKeyY[1]) {
+                    if ((this->io[0xAA] & 0x0F) == this->specialKeyY[1]) {
                         result |= bit[this->specialKeyX[1]];
                     }
                 }
@@ -306,7 +304,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xAA: return 0xFF;
             default:
                 printf("ignore an unknown input port $%02X\n", port);
-                return this->mem.ports[port];
+                return this->io[port];
         }
     }
     return 0;
@@ -314,7 +312,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
 
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
 {
-    this->mem.ports[port] = value;
+    this->io[port] = value;
     if (this->isSG1000()) {
         switch (port) {
             case 0x7E:
@@ -348,16 +346,16 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->ay8910.write(value);
                 break;
             case 0xA8:
-                this->slots.changePrimarySlots(value);
+                this->slot.changePrimarySlots(value);
                 break;
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
                 break;
             case 0xAB: // to access the ports control register. (Write only)
                 break;
-            case 0xFC: this->slots.setupPage(3, value); break;
-            case 0xFD: this->slots.setupPage(2, value); break;
-            case 0xFE: this->slots.setupPage(1, value); break;
-            case 0xFF: this->slots.setupPage(0, value); break;
+            case 0xFC: this->slot.setupPage(3, value); break;
+            case 0xFD: this->slot.setupPage(2, value); break;
+            case 0xFE: this->slot.setupPage(1, value); break;
+            case 0xFF: this->slot.setupPage(0, value); break;
             default:
                 printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
@@ -466,9 +464,9 @@ const void* TinyMSX::saveState(size_t* size)
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SN7, sizeof(this->sn76489.ctx), &this->sn76489.ctx);
     } else if (this->isMSX1()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SLT, sizeof(this->slot.ctx), &this->slot.ctx);
     }
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_MEM, sizeof(this->mem), &this->mem);
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SLT, sizeof(this->slots.ctx), &this->slots.ctx);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_IOS, sizeof(this->io), &this->io);
     *size = ptr;
     return this->tmpBuffer;
 }
@@ -497,9 +495,9 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_AY3, 2)) {
             memcpy(&this->ay8910.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_SLT, 2)) {
-            memcpy(&this->slots.ctx, d, ds);
-        } else if (0 == strncmp(ch, STATE_CHUNK_MEM, 2)) {
-            memcpy(&this->mem, d, ds);
+            memcpy(&this->slot.ctx, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_IOS, 2)) {
+            memcpy(this->io, d, ds);
         } else {
             // ignore unknown chunk
         }
