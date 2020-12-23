@@ -105,7 +105,7 @@ class TMS9918A
         return 0;                              // Mode 0
     }
 
-    inline int getVramSize() { return 1024 * (ctx.reg[1] & 0b10000000 ? 16 : 4); }
+    inline int getVramSize() { return ctx.reg[1] & 0b10000000 ? 0x4000 : 0x1000; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
@@ -122,14 +122,13 @@ class TMS9918A
             this->ctx.countH -= 342;
             this->renderScanline(this->ctx.countV);
             this->ctx.countV++;
-            if (262 == this->ctx.countV) {
+            if (192 == this->ctx.countV && this->isEnabledInterrupt()) {
+                this->ctx.stat |= 0x80;
+                this->detectBlank(this->arg);
+            } else if (262 == this->ctx.countV) {
                 this->ctx.countV -= 262;
                 this->detectBreak(this->arg);
             }
-        }
-        if (256 == this->ctx.countH && 215 == this->ctx.countV && this->isEnabledInterrupt()) {
-            this->ctx.stat |= 0x80;
-            this->detectBlank(this->arg);
         }
     }
 
@@ -149,7 +148,7 @@ class TMS9918A
 
     inline void writeData(unsigned char value)
     {
-        this->ctx.addr &= 0x3FFF;
+        this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
         this->ctx.ram[this->ctx.addr++] = this->ctx.readBuffer;
     }
@@ -196,12 +195,12 @@ class TMS9918A
         this->ctx.addr = this->ctx.tmpAddr[1];
         this->ctx.addr <<= 8;
         this->ctx.addr |= this->ctx.tmpAddr[0];
-        this->ctx.addr &= 0x3FFF;
+        this->ctx.addr &= this->getVramSize() - 1;
     }
 
     inline void readVideoMemory()
     {
-        this->ctx.addr &= 0x3FFF;
+        this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = this->ctx.ram[this->ctx.addr++];
     }
 
