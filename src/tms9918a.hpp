@@ -221,7 +221,11 @@ class TMS9918A
         bool screen = this->isEnabledScreen();
         bool externalVideoInput = this->isEnabledExternalVideoInput();
 #endif
+        bool previousInterrupt = this->isEnabledInterrupt();
         this->ctx.reg[this->ctx.tmpAddr[1] & 0b00001111] = this->ctx.tmpAddr[0];
+        if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat & 0x80) {
+            this->detectBlank(this->arg);
+        }
 #ifdef DEBUG
         int currentMode = 0;
         if (ctx.reg[1] & 0b00010000) currentMode |= 1; // Mode 1
