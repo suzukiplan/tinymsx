@@ -49,3 +49,7 @@ TinyMSX is a multi-emulator core library for C/C++ that supports following game 
 ### Example
 
 - [for macOS (Cocoa)](test/osx)
+
+## License
+
+[MIT](LICENSE.txt)
