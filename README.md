@@ -1,21 +1,14 @@
 # TinyMSX
 
-TinyMSX is a multi-emulator core library for C/C++ that supports SG-1000, OthelloMultiVision and MSX1.
+TinyMSX is a multi-emulator core library for C/C++ that supports following game consoles:
+
+- SG-1000
+- TSUKUDA ORIGINAL Othello MultiVision
+- MSX1 16KB or 32KB cartridge games
 
 |                   SG-1000                   |             Othello MultiVision              |                  MSX1                  |
 | :-----------------------------------------: | :------------------------------------------: | :------------------------------------: |
 | ![SG-1000](doc/image/screenshot_sg1000.png) | ![OTHELLO](doc/image/screenshot_othello.png) | ![MSX1](doc/image/screenshot_msx1.png) |
-
-## TODO
-
-- [x] Emulate SG-1000
-- [x] Emulate Othello Multivision (note: some input port are ignored)
-- [ ] Emulate ColecoVision
-- [x] Emulate MSX1 cartridge games
-- [ ] Emulate MSX1 mega-rom cartridge games
-- [ ] Emulate MSX2
-- [ ] Emulate MSX2+
-- <s>Emulate MSX turboR</s>
 
 ## How to use
 
