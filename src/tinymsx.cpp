@@ -27,9 +27,10 @@
 #include "tinymsx.h"
 #include <string.h>
 
-#define CPU_RATE 3579545
-#define VDP_RATE 5376240
-#define SAMPLE_RATE 44100
+#define MASTER_CLOCK 10738635 // Unused in this emulator
+#define CPU_CLOCK 3579545     // Master Clock div 3
+#define VDP_CLOCK 5370863     // 342 * 262 * 59.94 (Actually: Master Clock div 2)
+#define PSG_CLOCK 44100       // Output sampling rate
 
 #define STATE_CHUNK_CPU "CP"
 #define STATE_CHUNK_RAM "RA"
@@ -75,7 +76,7 @@ void TinyMSX::reset()
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
-        this->sn76489.reset(CPU_RATE, SAMPLE_RATE);
+        this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
     } else if (this->isMSX1()) {
         this->ay8910.reset();
         this->slots.reset();
@@ -367,24 +368,24 @@ inline void TinyMSX::consumeClock(int clocks)
 {
     // execute PSG
     if (this->isSG1000()) {
-        this->sn76489.ctx.bobo += clocks * SAMPLE_RATE;
-        while (0 <= this->sn76489.ctx.bobo) {
-            this->sn76489.ctx.bobo -= CPU_RATE;
+        this->sn76489.ctx.bobo += clocks * PSG_CLOCK;
+        while (0 < this->sn76489.ctx.bobo) {
+            this->sn76489.ctx.bobo -= CPU_CLOCK;
             this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1()) {
-        this->ay8910.ctx.bobo += clocks * SAMPLE_RATE;
-        while (0 <= this->ay8910.ctx.bobo) {
-            this->ay8910.ctx.bobo -= CPU_RATE;
+        this->ay8910.ctx.bobo += clocks * PSG_CLOCK;
+        while (0 < this->ay8910.ctx.bobo) {
+            this->ay8910.ctx.bobo -= CPU_CLOCK;
             this->ay8910.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     }
     // execute VDP
-    this->vdp.ctx.bobo += clocks * VDP_RATE;
-    while (0 <= this->vdp.ctx.bobo) {
-        this->vdp.ctx.bobo -= CPU_RATE;
+    this->vdp.ctx.bobo += clocks * VDP_CLOCK;
+    while (0 < this->vdp.ctx.bobo) {
+        this->vdp.ctx.bobo -= CPU_CLOCK;
         this->vdp.tick();
     }
 }
