@@ -139,6 +139,7 @@ class TMS9918A
     {
         unsigned char result = this->ctx.readBuffer;
         this->readVideoMemory();
+        this->ctx.latch = 0;
         return result;
     }
 
@@ -146,6 +147,7 @@ class TMS9918A
     {
         unsigned char result = this->ctx.stat;
         this->ctx.stat &= 0b01011111;
+        this->ctx.latch = 0;
         return result;
     }
 
@@ -154,6 +156,7 @@ class TMS9918A
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
         this->ctx.ram[this->ctx.addr++] = this->ctx.readBuffer;
+        this->ctx.latch = 0;
     }
 
     inline void writeAddress(unsigned char value)
