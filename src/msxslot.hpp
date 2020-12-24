@@ -130,8 +130,6 @@ class MsxSlot
         for (int i = pn - 1; 0 <= i; i--) {
             if (ps == this->primaryNumber(i) && ss == this->secondaryNumber(i)) {
                 sa++;
-            } else {
-                break;
             }
         }
         ss += sa;
@@ -152,8 +150,6 @@ class MsxSlot
         for (int i = pn - 1; 0 <= i; i--) {
             if (ps == this->primaryNumber(i) && ss == this->secondaryNumber(i)) {
                 sa++;
-            } else {
-                break;
             }
         }
         ss += sa;
