@@ -54,7 +54,7 @@ class TinyMSX {
         SN76489 sn76489;
         AY8910 ay8910;
         unsigned char io[0x100];
-        unsigned char ram[0x8000];
+        unsigned char ram[0x4000];
         MsxSlot slot;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, int colorMode);
