@@ -88,12 +88,12 @@ void TinyMSX::reset()
         // initialize Page n = Slot n
         this->slot.setupPage(0, 0);
         this->slot.setupPage(1, 1);
-        this->slot.setupPage(2, 1);
+        this->slot.setupPage(2, 2);
         this->slot.setupPage(3, 3);
-        // initialize default slot condition: 0-0, 1-0, 1-0, 3-0
+        // initialize default slot condition: 0-0, 1-0, 2-0, 3-0
         this->slot.setupSlot(0, 0b00000000);
         this->slot.setupSlot(1, 0b00000001);
-        this->slot.setupSlot(2, 0b00000001);
+        this->slot.setupSlot(2, 0b00000010);
         this->slot.setupSlot(3, 0b00000011);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
