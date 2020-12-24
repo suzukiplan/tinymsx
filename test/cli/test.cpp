@@ -127,14 +127,14 @@ int main(int argc, char* argv[])
                ++count,
                msx->vdp.ctx.countV,
                msx->vdp.getVideoMode(),
-               msx->slots.getPrimarySlotNumber(0),
-               msx->slots.getSecondarySlotNumber(0),
-               msx->slots.getPrimarySlotNumber(1),
-               msx->slots.getSecondarySlotNumber(1),
-               msx->slots.getPrimarySlotNumber(2),
-               msx->slots.getSecondarySlotNumber(2),
-               msx->slots.getPrimarySlotNumber(3),
-               msx->slots.getSecondarySlotNumber(3),
+               msx->slot.getPrimarySlotNumber(0),
+               msx->slot.getSecondarySlotNumber(0),
+               msx->slot.getPrimarySlotNumber(1),
+               msx->slot.getSecondarySlotNumber(1),
+               msx->slot.getPrimarySlotNumber(2),
+               msx->slot.getSecondarySlotNumber(2),
+               msx->slot.getPrimarySlotNumber(3),
+               msx->slot.getSecondarySlotNumber(3),
                msg);
     });
 #if 0
