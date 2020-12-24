@@ -50,19 +50,15 @@ class MsxSlot
         memset(&this->ctx, 0, sizeof(this->ctx));
     }
 
-    void setupPage(int index, int slotNumber) { this->ctx.page[index] = slotNumber; }
-    void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
+    inline void setupPage(int index, int slotNumber) { this->ctx.page[index] = slotNumber; }
+    inline void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
+    inline bool hasSlot(int ps, int ss) { return this->pages[ps].ptr[ss] ? true : false; }
 
-    bool add(int num, int extra, unsigned char* data, bool isReadOnly)
+    bool add(int ps, int ss, unsigned char* data, bool isReadOnly)
     {
-        this->pages[num].ptr[extra] = data;
-        this->pages[num].isReadOnly[extra] = isReadOnly;
+        this->pages[ps].ptr[ss] = data;
+        this->pages[ps].isReadOnly[ss] = isReadOnly;
         return true;
-    }
-
-    inline bool hasSlot(int num, int extra)
-    {
-        return this->pages[num].ptr[extra] ? true : false;
     }
 
     inline unsigned char readPrimaryStatus()
