@@ -33,10 +33,10 @@
 class MsxSlot
 {
   private:
-    struct Page {
+    struct Slot {
         unsigned char* ptr[4];
         bool isReadOnly[4];
-    } pages[4];
+    } slots[4];
 
   public:
     struct Context {
@@ -46,28 +46,27 @@ class MsxSlot
 
     void reset()
     {
-        memset(&this->pages, 0, sizeof(this->pages));
+        memset(&this->slots, 0, sizeof(this->slots));
         memset(&this->ctx, 0, sizeof(this->ctx));
     }
 
     inline void setupPage(int index, int slotNumber) { this->ctx.page[index] = slotNumber; }
     inline void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
-    inline bool hasSlot(int ps, int ss) { return this->pages[ps].ptr[ss] ? true : false; }
+    inline bool hasSlot(int ps, int ss) { return this->slots[ps].ptr[ss] ? true : false; }
 
-    bool add(int ps, int ss, unsigned char* data, bool isReadOnly)
+    inline void add(int ps, int ss, unsigned char* data, bool isReadOnly)
     {
-        this->pages[ps].ptr[ss] = data;
-        this->pages[ps].isReadOnly[ss] = isReadOnly;
-        return true;
+        this->slots[ps].ptr[ss] = data;
+        this->slots[ps].isReadOnly[ss] = isReadOnly;
     }
 
     inline unsigned char readPrimaryStatus()
     {
         unsigned char result = 0;
-        result |= (this->ctx.slot[3] & 0b00000011) << 6;
-        result |= (this->ctx.slot[2] & 0b00000011) << 4;
-        result |= (this->ctx.slot[1] & 0b00000011) << 2;
-        result |= (this->ctx.slot[0] & 0b00000011);
+        for (int i = 0; i < 4; i++) {
+            result <<= 2;
+            result |= this->ctx.slot[3 - i] & 0b00000011;
+        }
         return result;
     }
 
@@ -78,11 +77,9 @@ class MsxSlot
 #endif
         for (int i = 0; i < 4; i++) {
             this->ctx.slot[i] &= 0b11111100;
+            this->ctx.slot[i] |= value & 0b00000011;
+            value >>= 2;
         }
-        this->ctx.slot[3] |= value >> 6 & 3;
-        this->ctx.slot[2] |= value >> 4 & 3;
-        this->ctx.slot[1] |= value >> 2 & 3;
-        this->ctx.slot[0] |= value & 3;
 #ifdef DEBUG
         unsigned char current = this->readPrimaryStatus();
         if (previous != current) {
@@ -94,10 +91,10 @@ class MsxSlot
     inline unsigned char readSecondaryStatus()
     {
         unsigned char result = 0;
-        result |= (this->ctx.slot[0] & 0b00001100) >> 2;
-        result |= (this->ctx.slot[1] & 0b00001100);
-        result |= (this->ctx.slot[2] & 0b00001100) << 2;
-        result |= (this->ctx.slot[3] & 0b00001100) << 4;
+        for (int i = 0; i < 4; i++) {
+            result <<= 2;
+            result |= (this->ctx.slot[i] & 0b00001100) >> 2;
+        }
         return ~result;
     }
 
@@ -106,25 +103,20 @@ class MsxSlot
 #ifdef DEBUG
         unsigned char previous = this->readSecondaryStatus();
 #endif
-        this->changeSecondarySlot(0, value & 0b00000011);
-        this->changeSecondarySlot(1, value & 0b00001100 >> 2);
-        this->changeSecondarySlot(2, value & 0b00110000 >> 4);
-        this->changeSecondarySlot(3, value & 0b11000000 >> 6);
+        for (int i = 0; i < 4; i++) {
+            int sn = value & 0b00000011;
+            if (this->hasSlot(i, sn)) {
+                this->ctx.slot[i] &= 0b11110011;
+                this->ctx.slot[i] |= sn << 2;
+            }
+            value >>= 2;
+        }
 #ifdef DEBUG
         unsigned char current = this->readSecondaryStatus();
         if (previous != current) {
             printf("Secondary Slot Changed: %d-%d:%d-%d:%d-%d:%d-%d\n", getPrimarySlotNumber(0), getSecondarySlotNumber(0), getPrimarySlotNumber(1), getSecondarySlotNumber(1), getPrimarySlotNumber(2), getSecondarySlotNumber(2), getPrimarySlotNumber(3), getSecondarySlotNumber(3));
         }
 #endif
-    }
-
-    inline void changeSecondarySlot(int pn, int sn)
-    {
-        if (this->hasSlot(pn, sn)) {
-            this->ctx.slot[pn] &= 0b11110011;
-            this->ctx.slot[pn] |= sn ? 0x80 : 0;
-            this->ctx.slot[pn] |= sn << 2;
-        }
     }
 
     inline int getPrimarySlotNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b11; }
@@ -147,7 +139,7 @@ class MsxSlot
 
     inline unsigned char read(int ps, int ss, unsigned short addr)
     {
-        return this->pages[ps].ptr[ss] ? this->pages[ps].ptr[ss][addr & 0x3FFF] : 0xFF;
+        return this->slots[ps].ptr[ss] ? this->slots[ps].ptr[ss][addr & 0x3FFF] : 0xFF;
     }
 
     inline void write(unsigned short addr, unsigned char value)
@@ -156,9 +148,11 @@ class MsxSlot
         int ps = this->getPrimarySlotNumber(pn);
         int ss = this->getSecondarySlotNumber(pn);
         int sa = 0;
-        for (int i = 0; i < pn; i++) {
+        for (int i = pn - 1; 0 <= i; i--) {
             if (ps == this->getPrimarySlotNumber(i) && ss == this->getSecondarySlotNumber(i)) {
                 sa++;
+            } else {
+                break;
             }
         }
         ss += sa;
@@ -167,9 +161,9 @@ class MsxSlot
 
     inline void write(int ps, int ss, unsigned short addr, unsigned char value)
     {
-        if (this->pages[ps].isReadOnly[ss]) return;
-        if (!this->pages[ps].ptr[ss]) return;
-        this->pages[ps].ptr[ss][addr & 0x3FFF] = value;
+        if (this->slots[ps].isReadOnly[ss]) return;
+        if (!this->slots[ps].ptr[ss]) return;
+        this->slots[ps].ptr[ss][addr & 0x3FFF] = value;
     }
 };
 
