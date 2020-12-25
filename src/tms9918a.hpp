@@ -118,15 +118,13 @@ class TMS9918A
         } else if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
-                case 232: // Start of bottom border (End of active display)
+                case 248:
                     this->ctx.stat |= 0x80;
-                    break;
-                case 259: // Start of vertical sync
                     if (this->isEnabledInterrupt()) {
                         this->detectBlank(this->arg);
                     }
                     break;
-                case 262: // End of scanlines
+                case 262:
                     this->ctx.countV -= 262;
                     this->detectBreak(this->arg);
                     break;
