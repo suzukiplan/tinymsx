@@ -71,6 +71,11 @@ TinyMSX::~TinyMSX()
 void TinyMSX::reset()
 {
     memset(&this->cpu->reg, 0, sizeof(this->cpu->reg));
+    memset(&this->cpu->reg.pair, 0xFF, sizeof(this->cpu->reg.pair));
+    memset(&this->cpu->reg.back, 0xFF, sizeof(this->cpu->reg.back));
+    this->cpu->reg.SP = 0xF000;
+    this->cpu->reg.IX = 0xFFFF;
+    this->cpu->reg.IY = 0xFFFF;
     this->vdp.reset();
     memset(this->io, 0xFF, sizeof(this->io));
     memset(this->ram, 0, sizeof(this->ram));
@@ -85,6 +90,9 @@ void TinyMSX::reset()
         this->slot.add(1, 0, this->rom, true);
         if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
         this->slot.add(3, 0, this->ram, false);
+        this->slot.add(3, 1, this->ram, false); // mirror of #3-0
+        this->slot.add(3, 2, this->ram, false); // mirror of #3-0
+        this->slot.add(3, 3, this->ram, false); // mirror of #3-0
         // initialize Page n = Slot n
         this->slot.setupPage(0, 0);
         this->slot.setupPage(1, 1);
