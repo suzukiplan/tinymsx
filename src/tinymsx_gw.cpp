@@ -27,7 +27,7 @@
 #include "tinymsx.h"
 #include "tinymsx_gw.h"
 
-void* tinymsx_create(int type, const void* rom, size_t romSize, int colorMode) { return new TinyMSX(type, rom, romSize, colorMode); }
+void* tinymsx_create(int type, const void* rom, size_t romSize, size_t ramSize, int colorMode) { return new TinyMSX(type, rom, romSize, ramSize, colorMode); }
 void tinymsx_destroy(const void* context) { delete (TinyMSX*)context; }
 void tinymsx_reset(const void* context) { ((TinyMSX*)context)->reset(); }
 void tinymsx_tick(const void* context, unsigned char pad1, unsigned char pad2) { ((TinyMSX*)context)->tick(pad1, pad2); }

@@ -43,7 +43,7 @@
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
 
-TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
+TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, size_t ramSize, int colorMode)
 {
     this->type = type;
     this->rom = (unsigned char*)malloc(romSize);
@@ -53,6 +53,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, int colorMode)
     } else {
         this->romSize = 0;
     }
+    this->ramSize = ramSize;
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
     this->vdp.initialize(colorMode, this, detectBlank, detectBreak);
@@ -82,6 +83,7 @@ void TinyMSX::reset()
     memset(&this->ay8910, 0, sizeof(this->ay8910));
     if (this->isSG1000()) {
         this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
+        this->ramSize = 0x800;
     } else if (this->isMSX1()) {
         this->ay8910.reset();
         this->slot.reset();
@@ -89,10 +91,27 @@ void TinyMSX::reset()
         this->slot.add(0, 1, this->bios.logo, true);
         this->slot.add(1, 0, this->rom, true);
         if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
-        this->slot.add(3, 0, this->ram, false);
-        this->slot.add(3, 1, this->ram, false); // mirror of #3-0
-        this->slot.add(3, 2, this->ram, false); // mirror of #3-0
-        this->slot.add(3, 3, this->ram, false); // mirror of #3-0
+        if (this->ramSize < 0x4000) this->ramSize = 0x4000;
+        switch (this->ramSize / 0x4000) {
+            case 1:
+                this->slot.add(3, 3, &this->ram[0x0000], false);
+                break;
+            case 2:
+                this->slot.add(3, 2, &this->ram[0x0000], false);
+                this->slot.add(3, 3, &this->ram[0x4000], false);
+                break;
+            case 3:
+                this->slot.add(3, 1, &this->ram[0x0000], false);
+                this->slot.add(3, 2, &this->ram[0x4000], false);
+                this->slot.add(3, 3, &this->ram[0x8000], false);
+                break;
+            case 4:
+                this->slot.add(3, 0, &this->ram[0x0000], false);
+                this->slot.add(3, 1, &this->ram[0x4000], false);
+                this->slot.add(3, 2, &this->ram[0x8000], false);
+                this->slot.add(3, 3, &this->ram[0xC000], false);
+                break;
+        }
         // initialize Page n = Slot n
         this->slot.setupPage(0, 0);
         this->slot.setupPage(1, 1);
@@ -454,7 +473,7 @@ static int writeSaveState(unsigned char* buf, int ptr, const char* c, size_t s, 
 size_t TinyMSX::calcAvairableRamSize()
 {
     size_t result = 0;
-    for (int i = 0; i < sizeof(this->ram); i++) {
+    for (int i = 0; i < this->ramSize; i++) {
         if (this->ram[i]) {
             result = i + 1;
         }

@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
     fseek(fp, 0, SEEK_SET);
     fread(rom, 1, romSize, fp);
     fclose(fp);
-    TinyMSX msx(type, rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    TinyMSX msx(type, rom, romSize, 0x8000, TINYMSX_COLOR_MODE_RGB555);
     if (TINYMSX_TYPE_MSX1 == type) {
         if (!msx.loadBiosFromFile("../../bios/cbios_main_msx1.rom")) {
             puts("load BIOS error");
