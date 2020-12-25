@@ -10,7 +10,6 @@
 		1D0D90BA225440FB00FB9699 /* vgsspu_al.c in Sources */ = {isa = PBXBuildFile; fileRef = 1D0D90B9225440FB00FB9699 /* vgsspu_al.c */; };
 		74B4AA032595F0F400F60406 /* tinymsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74B4A9FA2595F0F400F60406 /* tinymsx.cpp */; };
 		74B4AA042595F0F400F60406 /* tinymsx_gw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 74B4AA002595F0F400F60406 /* tinymsx_gw.cpp */; };
-		74B4AA082595F10400F60406 /* cbios_logo_msx1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74B4AA062595F10400F60406 /* cbios_logo_msx1.rom */; };
 		74B4AA092595F10400F60406 /* cbios_main_msx1.rom in Resources */ = {isa = PBXBuildFile; fileRef = 74B4AA072595F10400F60406 /* cbios_main_msx1.rom */; };
 		94D1AB2A21D86ADC00DC595E /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2921D86ADC00DC595E /* AppDelegate.m */; };
 		94D1AB2D21D86ADC00DC595E /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 94D1AB2C21D86ADC00DC595E /* ViewController.m */; };
@@ -35,7 +34,6 @@
 		74B4AA002595F0F400F60406 /* tinymsx_gw.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinymsx_gw.cpp; path = ../../../../src/tinymsx_gw.cpp; sourceTree = "<group>"; };
 		74B4AA012595F0F400F60406 /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../../src/z80.hpp; sourceTree = "<group>"; };
 		74B4AA022595F0F400F60406 /* tms9918a.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tms9918a.hpp; path = ../../../../src/tms9918a.hpp; sourceTree = "<group>"; };
-		74B4AA062595F10400F60406 /* cbios_logo_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_logo_msx1.rom; path = ../../../../bios/cbios_logo_msx1.rom; sourceTree = "<group>"; };
 		74B4AA072595F10400F60406 /* cbios_main_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_main_msx1.rom; path = ../../../../bios/cbios_main_msx1.rom; sourceTree = "<group>"; };
 		94D1AB2521D86ADC00DC595E /* EmuBoard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmuBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D1AB2821D86ADC00DC595E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -71,7 +69,6 @@
 		74B4A9F72595F0CE00F60406 /* bios */ = {
 			isa = PBXGroup;
 			children = (
-				74B4AA062595F10400F60406 /* cbios_logo_msx1.rom */,
 				74B4AA072595F10400F60406 /* cbios_main_msx1.rom */,
 			);
 			path = bios;
@@ -204,7 +201,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				94D1AB2F21D86ADD00DC595E /* Assets.xcassets in Resources */,
-				74B4AA082595F10400F60406 /* cbios_logo_msx1.rom in Resources */,
 				94D1AB3221D86ADD00DC595E /* Main.storyboard in Resources */,
 				74B4AA092595F10400F60406 /* cbios_main_msx1.rom in Resources */,
 			);
