@@ -59,7 +59,7 @@ void emu_init(const void* rom, size_t romSize)
     puts("emu_init");
     if (emu_initialized) return;
     printf("load rom (size: %lu)\n", romSize);
-    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, 0x4000, TINYMSX_COLOR_MODE_RGB555);
     tinymsx_load_bios_msx1_main(emu_msx, emu_msx_bios, sizeof(emu_msx_bios));
     tinymsx_load_bios_msx1_logo(emu_msx, emu_msx_logo, sizeof(emu_msx_logo));
     tinymsx_reset(emu_msx);
@@ -80,7 +80,7 @@ void emu_reload(const void* rom, size_t romSize)
     if (emu_msx) {
         tinymsx_destroy(emu_msx);
     }
-    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, TINYMSX_COLOR_MODE_RGB555);
+    emu_msx = tinymsx_create(getTypeOfRom((char*)rom, romSize), rom, romSize, 0x4000, TINYMSX_COLOR_MODE_RGB555);
     tinymsx_load_bios_msx1_main(emu_msx, emu_msx_bios, sizeof(emu_msx_bios));
     tinymsx_load_bios_msx1_logo(emu_msx, emu_msx_logo, sizeof(emu_msx_logo));
     tinymsx_reset(emu_msx);
