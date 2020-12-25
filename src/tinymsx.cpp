@@ -443,19 +443,11 @@ bool TinyMSX::loadSpecificSizeFile(const char* path, void* buffer, size_t size)
 }
 
 bool TinyMSX::loadBiosFromFile(const char* path) { return this->loadSpecificSizeFile(path, this->bios.main, 0x8000); }
-bool TinyMSX::loadLogoFromFile(const char* path) { return this->loadSpecificSizeFile(path, this->bios.logo, 0x4000); }
 
 bool TinyMSX::loadBiosFromMemory(void* bios, size_t size)
 {
     if (size != 0x8000) return false;
     memcpy(this->bios.main, bios, size);
-    return true;
-}
-
-bool TinyMSX::loadLogoFromMemory(void* logo, size_t size)
-{
-    if (size != 0x4000) return false;
-    memcpy(this->bios.logo, logo, size);
     return true;
 }
 

@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include "constants.h"
 extern char emu_msx_bios[0x8000];
-extern char emu_msx_logo[0x4000];
 extern unsigned short emu_vram[VRAM_WIDTH * VRAM_HEIGHT];
 void emu_init(const void* rom, size_t romSize);
 void emu_reload(const void* rom, size_t romSize);

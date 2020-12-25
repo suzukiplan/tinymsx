@@ -38,7 +38,6 @@ class TinyMSX {
     private:
         struct MsxBIOS {
             unsigned char main[0x8000];
-            unsigned char logo[0x4000];
         } bios;
         int type;
         unsigned char pad[2];
@@ -62,8 +61,6 @@ class TinyMSX {
         ~TinyMSX();
         bool loadBiosFromFile(const char* path);
         bool loadBiosFromMemory(void* bios, size_t size);
-        bool loadLogoFromFile(const char* path);
-        bool loadLogoFromMemory(void* logo, size_t size);
         void setupSpecialKey1(unsigned char ascii, bool isTenKey = false);
         void setupSpecialKey2(unsigned char ascii, bool isTenKey = false);
         void reset();
