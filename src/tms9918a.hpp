@@ -381,7 +381,7 @@ class TMS9918A
                                 }
                             }
                         }
-                        cur += 8;
+                        cur += 16;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
