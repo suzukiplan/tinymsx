@@ -118,7 +118,7 @@ class TMS9918A
         } else if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
-                case 248:
+                case 251:
                     this->ctx.stat |= 0x80;
                     if (this->isEnabledInterrupt()) {
                         this->detectBlank(this->arg);
