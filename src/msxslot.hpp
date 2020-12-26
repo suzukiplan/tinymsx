@@ -34,8 +34,8 @@ class MsxSlot
 {
   private:
     struct Slot {
-        unsigned char* ptr[4];
-        bool isReadOnly[4];
+        unsigned char* ptr[16];
+        bool isReadOnly[16];
     } slots[4];
 
   public:
@@ -54,12 +54,15 @@ class MsxSlot
     inline void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
     inline bool hasSlot(int ps, int ss) { return this->slots[ps].ptr[ss] ? true : false; }
     inline int primaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b11; }
-    inline int secondaryNumber(int page) { return (this->ctx.slot[this->ctx.page[page]] & 0b1100) >> 2; }
+    inline int secondaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b1100; }
 
     inline void add(int ps, int ss, unsigned char* data, bool isReadOnly)
     {
-        this->slots[ps].ptr[ss] = data;
-        this->slots[ps].isReadOnly[ss] = isReadOnly;
+        ss <<= 2;
+        for (int i = 0; i < 4; i++, data += 0x1000, ss++) {
+            this->slots[ps].ptr[ss] = data;
+            this->slots[ps].isReadOnly[ss] = isReadOnly;
+        }
     }
 
     inline unsigned char readPrimaryStatus()
@@ -74,20 +77,10 @@ class MsxSlot
 
     inline void changePrimarySlots(unsigned char value)
     {
-#ifdef DEBUG
-        unsigned char previous = this->readPrimaryStatus();
-#endif
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++, value >>= 2) {
             this->ctx.slot[i] &= 0b11111100;
             this->ctx.slot[i] |= value & 0b00000011;
-            value >>= 2;
         }
-#ifdef DEBUG
-        unsigned char current = this->readPrimaryStatus();
-        if (previous != current) {
-            printf("Primary Slot Changed: %d-%d:%d-%d:%d-%d:%d-%d\n", primaryNumber(0), secondaryNumber(0), primaryNumber(1), secondaryNumber(1), primaryNumber(2), secondaryNumber(2), primaryNumber(3), secondaryNumber(3));
-        }
-#endif
     }
 
     inline unsigned char readSecondaryStatus()
@@ -102,65 +95,45 @@ class MsxSlot
 
     inline void changeSecondarySlots(unsigned char value)
     {
-#ifdef DEBUG
-        unsigned char previous = this->readSecondaryStatus();
-#endif
-        for (int i = 0; i < 4; i++) {
-            int sn = value & 0b00000011;
-            value >>= 2;
+        for (int i = 0; i < 4; i++, value >>= 2) {
+            int sn = (value & 0b00000011) << 2;
             if (this->hasSlot(i, sn)) {
                 this->ctx.slot[i] &= 0b11110011;
-                this->ctx.slot[i] |= sn << 2;
+                this->ctx.slot[i] |= sn;
             }
         }
-#ifdef DEBUG
-        unsigned char current = this->readSecondaryStatus();
-        if (previous != current) {
-            printf("Secondary Slot Changed: %d-%d:%d-%d:%d-%d:%d-%d\n", primaryNumber(0), secondaryNumber(0), primaryNumber(1), secondaryNumber(1), primaryNumber(2), secondaryNumber(2), primaryNumber(3), secondaryNumber(3));
-        }
-#endif
     }
 
     inline unsigned char read(unsigned short addr)
     {
-        int pn = addr / 0x4000;
+        int pn = (addr & 0b1100000000000000) >> 14;
+        int sa = (addr & 0b0011000000000000) >> 12;
         int ps = this->primaryNumber(pn);
         int ss = this->secondaryNumber(pn);
-        int sa = 0;
-        for (int i = pn - 1; 0 <= i; i--) {
-            if (ps == this->primaryNumber(i) && ss == this->secondaryNumber(i)) {
-                sa++;
+        while (0 < pn--) {
+            if (ps == this->primaryNumber(pn) && ss == this->secondaryNumber(pn)) {
+                sa += 0b0100;
             }
         }
         ss += sa;
-        return this->read(ps & 3, ss & 3, addr);
-    }
-
-    inline unsigned char read(int ps, int ss, unsigned short addr)
-    {
-        return this->slots[ps].ptr[ss] ? this->slots[ps].ptr[ss][addr & 0x3FFF] : 0xFF;
+        return this->slots[ps].ptr[ss] ? this->slots[ps].ptr[ss][addr & 0x0FFF] : 0xFF;
     }
 
     inline void write(unsigned short addr, unsigned char value)
     {
-        int pn = addr / 0x4000;
+        int pn = (addr & 0b1100000000000000) >> 14;
+        int sa = (addr & 0b0011000000000000) >> 12;
         int ps = this->primaryNumber(pn);
         int ss = this->secondaryNumber(pn);
-        int sa = 0;
-        for (int i = pn - 1; 0 <= i; i--) {
-            if (ps == this->primaryNumber(i) && ss == this->secondaryNumber(i)) {
-                sa++;
+        while (0 < pn--) {
+            if (ps == this->primaryNumber(pn) && ss == this->secondaryNumber(pn)) {
+                sa += 0b0100;
             }
         }
         ss += sa;
-        this->write(ps & 3, ss & 3, addr, value);
-    }
-
-    inline void write(int ps, int ss, unsigned short addr, unsigned char value)
-    {
         if (this->slots[ps].isReadOnly[ss]) return;
         if (!this->slots[ps].ptr[ss]) return;
-        this->slots[ps].ptr[ss][addr & 0x3FFF] = value;
+        this->slots[ps].ptr[ss][addr & 0x0FFF] = value;
     }
 };
 
