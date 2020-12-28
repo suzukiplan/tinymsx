@@ -80,6 +80,7 @@ class TinyMSX {
         inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
         inline bool isMSX1_GameMaster2() { return this->type == TINYMSX_TYPE_MSX1_GameMaster2; }
+        inline bool isMSX1Family() { return this->isMSX1() || this->isMSX1_GameMaster2(); }
         inline unsigned char readMemory(unsigned short addr);
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);
