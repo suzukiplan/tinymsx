@@ -37,9 +37,10 @@
 #define STATE_CHUNK_VDP "VD"
 #define STATE_CHUNK_SN7 "S7"
 #define STATE_CHUNK_AY3 "A3"
-#define STATE_CHUNK_IOS "IO"
 #define STATE_CHUNK_SLT "SL"
 #define STATE_CHUNK_GM2 "G2"
+#define STATE_CHUNK_A08 "A8"
+#define STATE_CHUNK_IO "IO"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
@@ -93,7 +94,10 @@ void TinyMSX::reset()
     } else if (this->isMSX1Family()) {
         this->ay8910.reset();
         this->slot_reset();
-        if (this->isMSX1_GameMaster2()) this->slotGM2.init(this->rom);
+        if (this->isMSX1_GameMaster2())
+            this->slotGM2.init(this->rom);
+        else if (this->isMSX1_ASC8())
+            this->slotASC8.init(this->rom);
         this->slot_add(0, 0, &this->bios.main[0x0000], true);
         this->slot_add(0, 1, &this->bios.main[0x4000], true);
         if (this->rom) {
@@ -158,6 +162,7 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
             break;
         case TINYMSX_TYPE_MSX1:
         case TINYMSX_TYPE_MSX1_GameMaster2:
+        case TINYMSX_TYPE_MSX1_ASC8:
             this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
@@ -496,8 +501,11 @@ const void* TinyMSX::saveState(size_t* size)
     } else if (this->isMSX1_GameMaster2()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_GM2, sizeof(this->slotGM2.ctx), &this->slotGM2.ctx);
+    } else if (this->isMSX1_ASC8()) {
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A08, sizeof(this->slotASC8.ctx), &this->slotASC8.ctx);
     }
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_IOS, sizeof(this->io), &this->io);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_IO, sizeof(this->io), &this->io);
     *size = ptr;
     return this->tmpBuffer;
 }
@@ -530,7 +538,10 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_GM2, 2)) {
             memcpy(&this->slotGM2.ctx, d, ds);
             this->slotGM2.reloadBank();
-        } else if (0 == strncmp(ch, STATE_CHUNK_IOS, 2)) {
+        } else if (0 == strncmp(ch, STATE_CHUNK_A08, 2)) {
+            memcpy(&this->slotASC8.ctx, d, ds);
+            this->slotASC8.reloadBank();
+        } else if (0 == strncmp(ch, STATE_CHUNK_IO, 2)) {
             memcpy(this->io, d, ds);
         } else {
             // ignore unknown chunk
