@@ -5,4 +5,4 @@ tinymsx
 *.sg
 *.rom
 log
-vdp.dmp
+*.dmp
