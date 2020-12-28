@@ -98,7 +98,7 @@ class TinyMSX {
             else if (this->isMSX1_GameMaster2()) this->slotGM2.setupPage(index, slotNumber);
         }
 
-    inline void slot_setupSlot(int index, int slotStatus) {
+        inline void slot_setupSlot(int index, int slotStatus) {
             if (this->isMSX1()) this->slot.setupSlot(index, slotStatus);
             else if (this->isMSX1_GameMaster2()) this->slotGM2.setupSlot(index, slotStatus);
         }
@@ -108,38 +108,38 @@ class TinyMSX {
             else if (this->isMSX1_GameMaster2()) this->slotGM2.add(ps, ss, data, isReadOnly);
         }
 
-    inline unsigned char slot_readPrimaryStatus() {
-        if (this->isMSX1()) return this->slot.readPrimaryStatus();
-        else if (this->isMSX1_GameMaster2()) return this->slotGM2.readPrimaryStatus();
-        else return 0xFF;
-    }
+        inline unsigned char slot_readPrimaryStatus() {
+            if (this->isMSX1()) return this->slot.readPrimaryStatus();
+            else if (this->isMSX1_GameMaster2()) return this->slotGM2.readPrimaryStatus();
+            else return 0xFF;
+        }
 
-    inline void slot_changePrimarySlots(unsigned char value) {
-        if (this->isMSX1()) this->slot.changePrimarySlots(value);
-        else if (this->isMSX1_GameMaster2()) this->slotGM2.changePrimarySlots(value);
-    }
+        inline void slot_changePrimarySlots(unsigned char value) {
+            if (this->isMSX1()) this->slot.changePrimarySlots(value);
+            else if (this->isMSX1_GameMaster2()) this->slotGM2.changePrimarySlots(value);
+        }
 
-    inline unsigned char slot_readSecondaryStatus() {
-        if (this->isMSX1()) return this->slot.readSecondaryStatus();
-        else if (this->isMSX1_GameMaster2()) return this->slotGM2.readSecondaryStatus();
-        else return 0xFF;
-    }
+        inline unsigned char slot_readSecondaryStatus() {
+            if (this->isMSX1()) return this->slot.readSecondaryStatus();
+            else if (this->isMSX1_GameMaster2()) return this->slotGM2.readSecondaryStatus();
+            else return 0xFF;
+        }
 
-    inline void slot_changeSecondarySlots(unsigned char value) {
-        if (this->isMSX1()) this->slot.changeSecondarySlots(value);
-        else if (this->isMSX1_GameMaster2()) this->slotGM2.changeSecondarySlots(value);
-    }
+        inline void slot_changeSecondarySlots(unsigned char value) {
+            if (this->isMSX1()) this->slot.changeSecondarySlots(value);
+            else if (this->isMSX1_GameMaster2()) this->slotGM2.changeSecondarySlots(value);
+        }
 
-    inline unsigned char slot_read(unsigned short addr) {
-        if (this->isMSX1()) return this->slot.read(addr);
-        else if (this->isMSX1_GameMaster2()) return this->slotGM2.read(addr);
-        else return 0xFF;
-    }
+        inline unsigned char slot_read(unsigned short addr) {
+            if (this->isMSX1()) return this->slot.read(addr);
+            else if (this->isMSX1_GameMaster2()) return this->slotGM2.read(addr);
+            else return 0xFF;
+        }
 
-    inline void slot_write(unsigned short addr, unsigned char value) {
-        if (this->isMSX1()) this->slot.write(addr, value);
-        else if (this->isMSX1_GameMaster2()) this->slotGM2.write(addr, value);
-    }
+        inline void slot_write(unsigned short addr, unsigned char value) {
+            if (this->isMSX1()) this->slot.write(addr, value);
+            else if (this->isMSX1_GameMaster2()) this->slotGM2.write(addr, value);
+        }
 };
 
 #endif
