@@ -46,11 +46,16 @@ static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
 TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, size_t ramSize, int colorMode)
 {
     this->type = type;
-    this->rom = (unsigned char*)malloc(romSize);
-    if (this->rom) {
-        memcpy(this->rom, rom, romSize);
-        this->romSize = romSize;
+    if (NULL != rom && 0 < romSize) {
+        this->rom = (unsigned char*)malloc(romSize);
+        if (this->rom) {
+            memcpy(this->rom, rom, romSize);
+            this->romSize = romSize;
+        } else {
+            this->romSize = 0;
+        }
     } else {
+        this->rom = NULL;
         this->romSize = 0;
     }
     this->ramSize = ramSize;
@@ -89,8 +94,10 @@ void TinyMSX::reset()
         this->slot.reset();
         this->slot.add(0, 0, &this->bios.main[0x0000], true);
         this->slot.add(0, 1, &this->bios.main[0x4000], true);
-        this->slot.add(1, 0, this->rom, true);
-        if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
+        if (this->rom) {
+            this->slot.add(1, 0, this->rom, true);
+            if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
+        }
         if (this->ramSize < 0x4000) this->ramSize = 0x4000;
         switch (this->ramSize / 0x4000) {
             case 1:
@@ -181,7 +188,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
 {
     if (this->isSG1000()) {
         if (addr < 0x8000) {
-            if (romSize <= addr) {
+            if (this->romSize <= addr) {
                 return 0;
             } else {
                 return this->rom[addr];
@@ -189,7 +196,7 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
         } else if (addr < 0xA000) {
             return 0; // unused in SG-1000
         } else {
-            return this->ram[addr & 0x1FFF];
+            return this->ram[addr & 0x07FF];
         }
     } else if (this->isMSX1()) {
         return 0xFFFF == addr ? this->slot.readSecondaryStatus() : this->slot.read(addr);
@@ -206,7 +213,7 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         } else if (addr < 0xA000) {
             return;
         } else {
-            this->ram[addr & 0x1FFF] = value;
+            this->ram[addr & 0x07FF] = value;
         }
     } else if (this->isMSX1()) {
         if (0xFFFF == addr) {
