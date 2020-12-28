@@ -125,7 +125,7 @@
     panel.canChooseDirectories = NO;
     panel.canCreateDirectories = YES;
     panel.canChooseFiles = YES;
-    panel.allowedFileTypes = @[ @"rom", @"sg" ];
+    panel.allowedFileTypes = @[ @"rom", @"sg", @"meg" ];
     __weak ViewController* weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         if (!result) return;
