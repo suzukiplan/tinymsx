@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 
-class MsxSlotGM2 : MsxSlot
+class MsxSlotGM2 : public MsxSlot
 {
   public:
     unsigned char* rom;
@@ -52,7 +52,7 @@ class MsxSlotGM2 : MsxSlot
 
     void init(unsigned char* rom) { this->rom = rom; }
 
-    void reset()
+    void reset() override
     {
         unsigned char sram[2][0x1000];
         memcpy(sram, this->ctx.sram, sizeof(sram));
@@ -63,7 +63,7 @@ class MsxSlotGM2 : MsxSlot
         this->reloadBank();
     }
 
-    inline void write(unsigned short addr, unsigned char value)
+    inline void write(unsigned short addr, unsigned char value) override
     {
         int pn = (addr & 0b1100000000000000) >> 14;
         int sa = (addr & 0b0011000000000000) >> 12;
@@ -105,16 +105,6 @@ class MsxSlotGM2 : MsxSlot
             }
         }
     }
-
-    // Methods that same with super class
-    inline void add(int ps, int ss, unsigned char* data, bool isReadOnly) { MsxSlot::add(ps, ss, data, isReadOnly); }
-    inline void setupPage(int index, int slotNumber) { MsxSlot::setupPage(index, slotNumber); }
-    inline void setupSlot(int index, int slotStatus) { MsxSlot::setupSlot(index, slotStatus); }
-    inline unsigned char readPrimaryStatus() { return MsxSlot::readPrimaryStatus(); }
-    inline void changePrimarySlots(unsigned char value) { MsxSlot::changePrimarySlots(value); }
-    inline unsigned char readSecondaryStatus() { return MsxSlot::readSecondaryStatus(); }
-    inline void changeSecondarySlots(unsigned char value) { MsxSlot::changeSecondarySlots(value); }
-    inline unsigned char read(unsigned short addr) { return MsxSlot::read(addr); }
 };
 
 #endif // INCLUDE_MSXSLOT_GM2_HPP
