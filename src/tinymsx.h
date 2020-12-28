@@ -30,6 +30,7 @@
 #include "z80.hpp"
 #include "tinymsx_def.h"
 #include "msxslot.hpp"
+#include "msxslot_gm2.hpp"
 #include "tms9918a.hpp"
 #include "sn76489.hpp"
 #include "ay8910.hpp"
@@ -56,6 +57,7 @@ class TinyMSX {
         unsigned char io[0x100];
         unsigned char ram[0x10000];
         MsxSlot slot;
+        MsxSlotGM2 slotGM2;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, size_t ramSize, int colorMode);
         ~TinyMSX();
@@ -77,6 +79,7 @@ class TinyMSX {
         void setupSpecialKey(int n, unsigned char ascii, bool isTenKey);
         inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
+        inline bool isMSX1_GameMaster2() { return this->type == TINYMSX_TYPE_MSX1_GameMaster2; }
         inline unsigned char readMemory(unsigned short addr);
         inline void writeMemory(unsigned short addr, unsigned char value);
         inline unsigned char inPort(unsigned char port);

@@ -5,6 +5,7 @@ TinyMSX is a multi-emulator core library for C/C++ that supports following game 
 - SG-1000
 - TSUKUDA ORIGINAL Othello MultiVision
 - MSX1 16KB or 32KB cartridge games
+- MSX1 KONAMI GameMaster2 MegaRom cartridge games
 
 |                   SG-1000                   |             Othello MultiVision              |                  MSX1                  |
 | :-----------------------------------------: | :------------------------------------------: | :------------------------------------: |

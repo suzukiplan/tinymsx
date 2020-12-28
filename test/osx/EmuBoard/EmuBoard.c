@@ -41,7 +41,13 @@ static void sound_callback(void* buffer, size_t size)
 
 static int getTypeOfRom(char* rom, size_t romSize)
 {
-    if (2 <= romSize && 'A' == rom[0] && 'B' == rom[1]) {
+    if (128 * 1024 == romSize) {
+        puts("open as MSX1 GameMaster2 mega-rom file");
+        return TINYMSX_TYPE_MSX1_GameMaster2;
+    } else if (64 * 1024 == romSize) {
+        puts("open as MSX1 64KB ROM file");
+        return TINYMSX_TYPE_MSX1;
+    } else if (2 <= romSize && 'A' == rom[0] && 'B' == rom[1]) {
         puts("open as MSX1 rom file");
         return TINYMSX_TYPE_MSX1;
     } else {

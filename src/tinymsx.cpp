@@ -39,6 +39,7 @@
 #define STATE_CHUNK_AY3 "A3"
 #define STATE_CHUNK_IOS "IO"
 #define STATE_CHUNK_SLT "SL"
+#define STATE_CHUNK_GM2 "G2"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
 static void detectBreak(void* arg) { ((TinyMSX*)arg)->cpu->requestBreak(); }
@@ -129,6 +130,47 @@ void TinyMSX::reset()
         this->slot.setupSlot(1, 0b00000001);
         this->slot.setupSlot(2, 0b00000010);
         this->slot.setupSlot(3, 0b00000011);
+    } else if (this->isMSX1_GameMaster2()) {
+        this->ay8910.reset();
+        this->slotGM2.reset();
+        this->slotGM2.init(this->rom);
+        this->slotGM2.add(0, 0, &this->bios.main[0x0000], true);
+        this->slotGM2.add(0, 1, &this->bios.main[0x4000], true);
+        if (this->rom) {
+            this->slotGM2.add(1, 0, this->rom, true);
+            if (0x4000 < this->romSize) this->slotGM2.add(1, 1, &this->rom[0x4000], true);
+        }
+        if (this->ramSize < 0x4000) this->ramSize = 0x4000;
+        switch (this->ramSize / 0x4000) {
+            case 1:
+                this->slotGM2.add(3, 3, &this->ram[0x0000], false);
+                break;
+            case 2:
+                this->slotGM2.add(3, 2, &this->ram[0x0000], false);
+                this->slotGM2.add(3, 3, &this->ram[0x4000], false);
+                break;
+            case 3:
+                this->slotGM2.add(3, 1, &this->ram[0x0000], false);
+                this->slotGM2.add(3, 2, &this->ram[0x4000], false);
+                this->slotGM2.add(3, 3, &this->ram[0x8000], false);
+                break;
+            case 4:
+                this->slotGM2.add(3, 0, &this->ram[0x0000], false);
+                this->slotGM2.add(3, 1, &this->ram[0x4000], false);
+                this->slotGM2.add(3, 2, &this->ram[0x8000], false);
+                this->slotGM2.add(3, 3, &this->ram[0xC000], false);
+                break;
+        }
+        // initialize Page n = Slot n
+        this->slotGM2.setupPage(0, 0);
+        this->slotGM2.setupPage(1, 1);
+        this->slotGM2.setupPage(2, 2);
+        this->slotGM2.setupPage(3, 3);
+        // initialize default slot condition: 0-0, 1-0, 2-0, 3-0
+        this->slotGM2.setupSlot(0, 0b00000000);
+        this->slotGM2.setupSlot(1, 0b00000001);
+        this->slotGM2.setupSlot(2, 0b00000010);
+        this->slotGM2.setupSlot(3, 0b00000011);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
@@ -155,6 +197,7 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
             this->pad[1] |= 0b11110000;
             break;
         case TINYMSX_TYPE_MSX1:
+        case TINYMSX_TYPE_MSX1_GameMaster2:
             this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
@@ -200,6 +243,8 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
         }
     } else if (this->isMSX1()) {
         return 0xFFFF == addr ? this->slot.readSecondaryStatus() : this->slot.read(addr);
+    } else if (this->isMSX1_GameMaster2()) {
+        return 0xFFFF == addr ? this->slotGM2.readSecondaryStatus() : this->slotGM2.read(addr);
     } else {
         return 0; // unknown system
     }
@@ -220,6 +265,12 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
             this->slot.changeSecondarySlots(value);
         } else {
             this->slot.write(addr, value);
+        }
+    } else if (this->isMSX1_GameMaster2()) {
+        if (0xFFFF == addr) {
+            this->slotGM2.changeSecondarySlots(value);
+        } else {
+            this->slotGM2.write(addr, value);
         }
     }
 }
@@ -300,7 +351,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 printf("ignore an unknown input port $%02X\n", port);
                 return this->io[port];
         }
-    } else if (this->isMSX1()) {
+    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
         switch (port) {
             case 0x98:
                 return this->vdp.readData();
@@ -308,9 +359,14 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 return this->vdp.readStatus();
             case 0xA2:
                 return this->ay8910.read();
-            case 0xA8: {
-                return this->slot.readPrimaryStatus();
-            }
+            case 0xA8:
+                if (this->isMSX1()) {
+                    return this->slot.readPrimaryStatus();
+                } else if (this->isMSX1_GameMaster2()) {
+                    return this->slotGM2.readPrimaryStatus();
+                } else {
+                    return 0xFF;
+                }
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -365,7 +421,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             default:
                 printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
-    } else if (this->isMSX1()) {
+    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
         switch (port) {
             case 0x98:
                 this->vdp.writeData(value);
@@ -380,16 +436,26 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->ay8910.write(value);
                 break;
             case 0xA8:
-                this->slot.changePrimarySlots(value);
+                if (this->isMSX1()) {
+                    this->slot.changePrimarySlots(value);
+                } else if (this->isMSX1_GameMaster2()) {
+                    this->slotGM2.changePrimarySlots(value);
+                }
                 break;
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
                 break;
             case 0xAB: // to access the ports control register. (Write only)
                 break;
-            case 0xFC: this->slot.setupPage(3, value); break;
-            case 0xFD: this->slot.setupPage(2, value); break;
-            case 0xFE: this->slot.setupPage(1, value); break;
-            case 0xFF: this->slot.setupPage(0, value); break;
+            case 0xFC:
+            case 0xFD:
+            case 0xFE:
+            case 0xFF:
+                if (this->isMSX1()) {
+                    this->slot.setupPage(3 - (port & 0b11), value);
+                } else if (this->isMSX1_GameMaster2()) {
+                    this->slotGM2.setupPage(3 - (port & 0b11), value);
+                }
+                break;
             default:
                 printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
@@ -406,7 +472,7 @@ inline void TinyMSX::consumeClock(int clocks)
             this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
-    } else if (this->isMSX1()) {
+    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
         this->ay8910.ctx.bobo += clocks * PSG_CLOCK;
         while (0 < this->ay8910.ctx.bobo) {
             this->ay8910.ctx.bobo -= CPU_CLOCK;
@@ -491,6 +557,9 @@ const void* TinyMSX::saveState(size_t* size)
     } else if (this->isMSX1()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SLT, sizeof(this->slot.ctx), &this->slot.ctx);
+    } else if (this->isMSX1_GameMaster2()) {
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_GM2, sizeof(this->slotGM2.ctx), &this->slotGM2.ctx);
     }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_IOS, sizeof(this->io), &this->io);
     *size = ptr;
@@ -522,6 +591,9 @@ void TinyMSX::loadState(const void* data, size_t size)
             memcpy(&this->ay8910.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_SLT, 2)) {
             memcpy(&this->slot.ctx, d, ds);
+        } else if (0 == strncmp(ch, STATE_CHUNK_GM2, 2)) {
+            memcpy(&this->slotGM2.ctx, d, ds);
+            this->slotGM2.reloadBank();
         } else if (0 == strncmp(ch, STATE_CHUNK_IOS, 2)) {
             memcpy(this->io, d, ds);
         } else {
