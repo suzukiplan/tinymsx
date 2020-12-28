@@ -44,19 +44,19 @@ class MsxSlot
         unsigned char slot[4];
     } ctx;
 
-    virtual void reset()
+    void reset()
     {
         memset(&this->slots, 0, sizeof(this->slots));
         memset(&this->ctx, 0, sizeof(this->ctx));
     }
 
-    virtual inline void setupPage(int index, int slotNumber) { this->ctx.page[index] = slotNumber; }
-    virtual inline void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
-    virtual inline bool hasSlot(int ps, int ss) { return this->slots[ps].ptr[ss] ? true : false; }
-    virtual inline int primaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b11; }
-    virtual inline int secondaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b1100; }
+    inline void setupPage(int index, int slotNumber) { this->ctx.page[index] = slotNumber; }
+    inline void setupSlot(int index, int slotStatus) { this->ctx.slot[index] = slotStatus; }
+    inline bool hasSlot(int ps, int ss) { return this->slots[ps].ptr[ss] ? true : false; }
+    inline int primaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b11; }
+    inline int secondaryNumber(int page) { return this->ctx.slot[this->ctx.page[page]] & 0b1100; }
 
-    virtual inline void add(int ps, int ss, unsigned char* data, bool isReadOnly)
+    inline void add(int ps, int ss, unsigned char* data, bool isReadOnly)
     {
         ss <<= 2;
         for (int i = 0; i < 4; i++, data += 0x1000, ss++) {
@@ -65,7 +65,7 @@ class MsxSlot
         }
     }
 
-    virtual inline unsigned char readPrimaryStatus()
+    inline unsigned char readPrimaryStatus()
     {
         unsigned char result = 0;
         for (int i = 0; i < 4; i++) {
@@ -75,7 +75,7 @@ class MsxSlot
         return result;
     }
 
-    virtual inline void changePrimarySlots(unsigned char value)
+    inline void changePrimarySlots(unsigned char value)
     {
         for (int i = 0; i < 4; i++, value >>= 2) {
             this->ctx.slot[i] &= 0b11111100;
@@ -83,7 +83,7 @@ class MsxSlot
         }
     }
 
-    virtual inline unsigned char readSecondaryStatus()
+    inline unsigned char readSecondaryStatus()
     {
         unsigned char result = 0;
         for (int i = 0; i < 4; i++) {
@@ -93,7 +93,7 @@ class MsxSlot
         return ~result;
     }
 
-    virtual inline void changeSecondarySlots(unsigned char value)
+    inline void changeSecondarySlots(unsigned char value)
     {
         for (int i = 0; i < 4; i++, value >>= 2) {
             int sn = (value & 0b00000011) << 2;
@@ -104,7 +104,7 @@ class MsxSlot
         }
     }
 
-    virtual inline unsigned char read(unsigned short addr)
+    inline unsigned char read(unsigned short addr)
     {
         int pn = (addr & 0b1100000000000000) >> 14;
         int sa = (addr & 0b0011000000000000) >> 12;
@@ -119,7 +119,7 @@ class MsxSlot
         return this->slots[ps].ptr[ss] ? this->slots[ps].ptr[ss][addr & 0x0FFF] : 0xFF;
     }
 
-    virtual inline void write(unsigned short addr, unsigned char value)
+    inline void write(unsigned short addr, unsigned char value)
     {
         int pn = (addr & 0b1100000000000000) >> 14;
         int sa = (addr & 0b0011000000000000) >> 12;
