@@ -33,7 +33,7 @@ TinyMSX is a multi-emulator core library for C/C++ that supports following game 
     msx.tick(0, 0);
 
     // Get display buffer (256 x 192 x 2 bytes)
-    unsigned short* display = msx.vdp.display;
+    unsigned short* display = msx.getDisplayBuffer();
 
     // Get and clear the buffered audio data (44.1Hz/16bit/2ch) by tick execution.
     size_t soundSize;

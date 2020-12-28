@@ -62,7 +62,7 @@ TinyMSX::TinyMSX(int type, const void* rom, size_t romSize, size_t ramSize, int 
     this->ramSize = ramSize;
     this->cpu = new Z80([](void* arg, unsigned short addr) { return ((TinyMSX*)arg)->readMemory(addr); }, [](void* arg, unsigned short addr, unsigned char value) { return ((TinyMSX*)arg)->writeMemory(addr, value); }, [](void* arg, unsigned char port) { return ((TinyMSX*)arg)->inPort(port); }, [](void* arg, unsigned char port, unsigned char value) { return ((TinyMSX*)arg)->outPort(port, value); }, this);
     this->cpu->setConsumeClockCallback([](void* arg, int clocks) { ((TinyMSX*)arg)->consumeClock(clocks); });
-    this->vdp.initialize(colorMode, this, detectBlank, detectBreak);
+    this->tms9918.initialize(colorMode, this, detectBlank, detectBreak);
     memset(&this->bios, 0, sizeof(this->bios));
     reset();
 }
@@ -83,7 +83,7 @@ void TinyMSX::reset()
     this->cpu->reg.SP = 0xF000;
     this->cpu->reg.IX = 0xFFFF;
     this->cpu->reg.IY = 0xFFFF;
-    this->vdp.reset();
+    this->tms9918.reset();
     memset(this->io, 0xFF, sizeof(this->io));
     memset(this->ram, 0, sizeof(this->ram));
     memset(&this->ay8910, 0, sizeof(this->ay8910));
@@ -286,9 +286,9 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xDD:
                 return this->pad[1];
             case 0xBE:
-                return this->vdp.readData();
+                return this->tms9918.readData();
             case 0xBF:
-                return this->vdp.readStatus();
+                return this->tms9918.readStatus();
             case 0xD9: // unknown (read from 007: it will occur when pushed a trigger at the title)
             case 0xDE: // SC-3000 keyboard port (ignore)
             case 0xDF: // SC-3000 keyboard port (ignore)
@@ -304,9 +304,9 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
     } else if (this->isMSX1Family()) {
         switch (port) {
             case 0x98:
-                return this->vdp.readData();
+                return this->tms9918.readData();
             case 0x99:
-                return this->vdp.readStatus();
+                return this->tms9918.readStatus();
             case 0xA2:
                 return this->ay8910.read();
             case 0xA8:
@@ -354,10 +354,10 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->sn76489.write(value);
                 break;
             case 0xBE:
-                this->vdp.writeData(value);
+                this->tms9918.writeData(value);
                 break;
             case 0xBF:
-                this->vdp.writeAddress(value);
+                this->tms9918.writeAddress(value);
                 break;
             case 0xDE: // keyboard port (ignore)
             case 0xDF: // keyboard port (ignore)
@@ -368,10 +368,10 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
     } else if (this->isMSX1Family()) {
         switch (port) {
             case 0x98:
-                this->vdp.writeData(value);
+                this->tms9918.writeData(value);
                 break;
             case 0x99:
-                this->vdp.writeAddress(value);
+                this->tms9918.writeAddress(value);
                 break;
             case 0xA0:
                 this->ay8910.latch(value);
@@ -417,10 +417,10 @@ inline void TinyMSX::consumeClock(int clocks)
         }
     }
     // execute VDP
-    this->vdp.ctx.bobo += clocks * VDP_CLOCK;
-    while (0 < this->vdp.ctx.bobo) {
-        this->vdp.ctx.bobo -= CPU_CLOCK;
-        this->vdp.tick();
+    this->tms9918.ctx.bobo += clocks * VDP_CLOCK;
+    while (0 < this->tms9918.ctx.bobo) {
+        this->tms9918.ctx.bobo -= CPU_CLOCK;
+        this->tms9918.tick();
     }
 }
 
@@ -487,7 +487,7 @@ const void* TinyMSX::saveState(size_t* size)
     int ptr = 0;
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_CPU, sizeof(this->cpu->reg), &this->cpu->reg);
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_RAM, this->calcAvairableRamSize(), this->ram);
-    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->vdp.ctx), &this->vdp.ctx);
+    ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_VDP, sizeof(this->tms9918.ctx), &this->tms9918.ctx);
     if (this->isSG1000()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SN7, sizeof(this->sn76489.ctx), &this->sn76489.ctx);
     } else if (this->isMSX1()) {
@@ -519,8 +519,8 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_RAM, 2)) {
             memcpy(this->ram, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_VDP, 2)) {
-            this->vdp.reset();
-            memcpy(&this->vdp.ctx, d, ds);
+            this->tms9918.reset();
+            memcpy(&this->tms9918.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_SN7, 2)) {
             memcpy(&this->sn76489.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_AY3, 2)) {

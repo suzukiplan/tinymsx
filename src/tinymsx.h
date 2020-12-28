@@ -51,7 +51,7 @@ class TinyMSX {
         unsigned short soundBufferCursor;
         unsigned char tmpBuffer[1024 * 1024];
     public:
-        TMS9918A vdp;
+        TMS9918A tms9918;
         SN76489 sn76489;
         AY8910 ay8910;
         unsigned char io[0x100];
@@ -67,6 +67,8 @@ class TinyMSX {
         void setupSpecialKey2(unsigned char ascii, bool isTenKey = false);
         void reset();
         void tick(unsigned char pad1, unsigned char pad2);
+        unsigned short* getDisplayBuffer() { return this->tms9918.display; }
+        unsigned short getBackdropColor() { return this->tms9918.getBackdropColor(); }
         void* getSoundBuffer(size_t* size);
         const void* saveState(size_t* size);
         void loadState(const void* data, size_t size);
