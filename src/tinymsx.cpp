@@ -90,87 +90,47 @@ void TinyMSX::reset()
     if (this->isSG1000()) {
         this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
         this->ramSize = 0x800;
-    } else if (this->isMSX1()) {
+    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
         this->ay8910.reset();
-        this->slot.reset();
-        this->slot.add(0, 0, &this->bios.main[0x0000], true);
-        this->slot.add(0, 1, &this->bios.main[0x4000], true);
+        this->slot_reset();
+        if (this->isMSX1_GameMaster2()) this->slotGM2.init(this->rom);
+        this->slot_add(0, 0, &this->bios.main[0x0000], true);
+        this->slot_add(0, 1, &this->bios.main[0x4000], true);
         if (this->rom) {
-            this->slot.add(1, 0, this->rom, true);
-            if (0x4000 < this->romSize) this->slot.add(1, 1, &this->rom[0x4000], true);
+            this->slot_add(1, 0, this->rom, true);
+            if (0x4000 < this->romSize) this->slot_add(1, 1, &this->rom[0x4000], true);
         }
         if (this->ramSize < 0x4000) this->ramSize = 0x4000;
         switch (this->ramSize / 0x4000) {
             case 1:
-                this->slot.add(3, 3, &this->ram[0x0000], false);
+                this->slot_add(3, 3, &this->ram[0x0000], false);
                 break;
             case 2:
-                this->slot.add(3, 2, &this->ram[0x0000], false);
-                this->slot.add(3, 3, &this->ram[0x4000], false);
+                this->slot_add(3, 2, &this->ram[0x0000], false);
+                this->slot_add(3, 3, &this->ram[0x4000], false);
                 break;
             case 3:
-                this->slot.add(3, 1, &this->ram[0x0000], false);
-                this->slot.add(3, 2, &this->ram[0x4000], false);
-                this->slot.add(3, 3, &this->ram[0x8000], false);
+                this->slot_add(3, 1, &this->ram[0x0000], false);
+                this->slot_add(3, 2, &this->ram[0x4000], false);
+                this->slot_add(3, 3, &this->ram[0x8000], false);
                 break;
             case 4:
-                this->slot.add(3, 0, &this->ram[0x0000], false);
-                this->slot.add(3, 1, &this->ram[0x4000], false);
-                this->slot.add(3, 2, &this->ram[0x8000], false);
-                this->slot.add(3, 3, &this->ram[0xC000], false);
+                this->slot_add(3, 0, &this->ram[0x0000], false);
+                this->slot_add(3, 1, &this->ram[0x4000], false);
+                this->slot_add(3, 2, &this->ram[0x8000], false);
+                this->slot_add(3, 3, &this->ram[0xC000], false);
                 break;
         }
         // initialize Page n = Slot n
-        this->slot.setupPage(0, 0);
-        this->slot.setupPage(1, 1);
-        this->slot.setupPage(2, 2);
-        this->slot.setupPage(3, 3);
+        this->slot_setupPage(0, 0);
+        this->slot_setupPage(1, 1);
+        this->slot_setupPage(2, 2);
+        this->slot_setupPage(3, 3);
         // initialize default slot condition: 0-0, 1-0, 2-0, 3-0
-        this->slot.setupSlot(0, 0b00000000);
-        this->slot.setupSlot(1, 0b00000001);
-        this->slot.setupSlot(2, 0b00000010);
-        this->slot.setupSlot(3, 0b00000011);
-    } else if (this->isMSX1_GameMaster2()) {
-        this->ay8910.reset();
-        this->slotGM2.reset();
-        this->slotGM2.init(this->rom);
-        this->slotGM2.add(0, 0, &this->bios.main[0x0000], true);
-        this->slotGM2.add(0, 1, &this->bios.main[0x4000], true);
-        if (this->rom) {
-            this->slotGM2.add(1, 0, this->rom, true);
-            if (0x4000 < this->romSize) this->slotGM2.add(1, 1, &this->rom[0x4000], true);
-        }
-        if (this->ramSize < 0x4000) this->ramSize = 0x4000;
-        switch (this->ramSize / 0x4000) {
-            case 1:
-                this->slotGM2.add(3, 3, &this->ram[0x0000], false);
-                break;
-            case 2:
-                this->slotGM2.add(3, 2, &this->ram[0x0000], false);
-                this->slotGM2.add(3, 3, &this->ram[0x4000], false);
-                break;
-            case 3:
-                this->slotGM2.add(3, 1, &this->ram[0x0000], false);
-                this->slotGM2.add(3, 2, &this->ram[0x4000], false);
-                this->slotGM2.add(3, 3, &this->ram[0x8000], false);
-                break;
-            case 4:
-                this->slotGM2.add(3, 0, &this->ram[0x0000], false);
-                this->slotGM2.add(3, 1, &this->ram[0x4000], false);
-                this->slotGM2.add(3, 2, &this->ram[0x8000], false);
-                this->slotGM2.add(3, 3, &this->ram[0xC000], false);
-                break;
-        }
-        // initialize Page n = Slot n
-        this->slotGM2.setupPage(0, 0);
-        this->slotGM2.setupPage(1, 1);
-        this->slotGM2.setupPage(2, 2);
-        this->slotGM2.setupPage(3, 3);
-        // initialize default slot condition: 0-0, 1-0, 2-0, 3-0
-        this->slotGM2.setupSlot(0, 0b00000000);
-        this->slotGM2.setupSlot(1, 0b00000001);
-        this->slotGM2.setupSlot(2, 0b00000010);
-        this->slotGM2.setupSlot(3, 0b00000011);
+        this->slot_setupSlot(0, 0b00000000);
+        this->slot_setupSlot(1, 0b00000001);
+        this->slot_setupSlot(2, 0b00000010);
+        this->slot_setupSlot(3, 0b00000011);
     }
     memset(this->soundBuffer, 0, sizeof(this->soundBuffer));
     this->soundBufferCursor = 0;
@@ -241,12 +201,8 @@ inline unsigned char TinyMSX::readMemory(unsigned short addr)
         } else {
             return this->ram[addr & 0x07FF];
         }
-    } else if (this->isMSX1()) {
-        return 0xFFFF == addr ? this->slot.readSecondaryStatus() : this->slot.read(addr);
-    } else if (this->isMSX1_GameMaster2()) {
-        return 0xFFFF == addr ? this->slotGM2.readSecondaryStatus() : this->slotGM2.read(addr);
     } else {
-        return 0; // unknown system
+        return 0xFFFF == addr ? this->slot_readSecondaryStatus() : this->slot_read(addr);
     }
 }
 
@@ -260,17 +216,11 @@ inline void TinyMSX::writeMemory(unsigned short addr, unsigned char value)
         } else {
             this->ram[addr & 0x07FF] = value;
         }
-    } else if (this->isMSX1()) {
+    } else {
         if (0xFFFF == addr) {
-            this->slot.changeSecondarySlots(value);
+            this->slot_changeSecondarySlots(value);
         } else {
-            this->slot.write(addr, value);
-        }
-    } else if (this->isMSX1_GameMaster2()) {
-        if (0xFFFF == addr) {
-            this->slotGM2.changeSecondarySlots(value);
-        } else {
-            this->slotGM2.write(addr, value);
+            this->slot_write(addr, value);
         }
     }
 }
@@ -360,13 +310,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
             case 0xA2:
                 return this->ay8910.read();
             case 0xA8:
-                if (this->isMSX1()) {
-                    return this->slot.readPrimaryStatus();
-                } else if (this->isMSX1_GameMaster2()) {
-                    return this->slotGM2.readPrimaryStatus();
-                } else {
-                    return 0xFF;
-                }
+                return this->slot_readPrimaryStatus();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -436,11 +380,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
                 this->ay8910.write(value);
                 break;
             case 0xA8:
-                if (this->isMSX1()) {
-                    this->slot.changePrimarySlots(value);
-                } else if (this->isMSX1_GameMaster2()) {
-                    this->slotGM2.changePrimarySlots(value);
-                }
+                this->slot_changePrimarySlots(value);
                 break;
             case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
                 break;
@@ -450,11 +390,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             case 0xFD:
             case 0xFE:
             case 0xFF:
-                if (this->isMSX1()) {
-                    this->slot.setupPage(3 - (port & 0b11), value);
-                } else if (this->isMSX1_GameMaster2()) {
-                    this->slotGM2.setupPage(3 - (port & 0b11), value);
-                }
+                this->slot_setupPage(3 - (port & 0b11), value);
                 break;
             default:
                 printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
