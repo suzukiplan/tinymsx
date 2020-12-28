@@ -90,7 +90,7 @@ void TinyMSX::reset()
     if (this->isSG1000()) {
         this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
         this->ramSize = 0x800;
-    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
+    } else if (this->isMSX1Family()) {
         this->ay8910.reset();
         this->slot_reset();
         if (this->isMSX1_GameMaster2()) this->slotGM2.init(this->rom);
@@ -301,7 +301,7 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 printf("ignore an unknown input port $%02X\n", port);
                 return this->io[port];
         }
-    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
+    } else if (this->isMSX1Family()) {
         switch (port) {
             case 0x98:
                 return this->vdp.readData();
@@ -365,7 +365,7 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
             default:
                 printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
-    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
+    } else if (this->isMSX1Family()) {
         switch (port) {
             case 0x98:
                 this->vdp.writeData(value);
@@ -408,7 +408,7 @@ inline void TinyMSX::consumeClock(int clocks)
             this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
-    } else if (this->isMSX1() || this->isMSX1_GameMaster2()) {
+    } else if (this->isMSX1Family()) {
         this->ay8910.ctx.bobo += clocks * PSG_CLOCK;
         while (0 < this->ay8910.ctx.bobo) {
             this->ay8910.ctx.bobo -= CPU_CLOCK;
