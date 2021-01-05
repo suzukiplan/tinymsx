@@ -50,8 +50,8 @@ class V9938
         unsigned char reg[64];
         unsigned char pal[16][2];
         unsigned char tmpAddr[2];
+        unsigned char stat[16];
         unsigned short addr;
-        unsigned char stat;
         unsigned char latch;
         unsigned char readBuffer;
     } ctx;
@@ -109,7 +109,7 @@ class V9938
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
                 case 251:
-                    this->ctx.stat |= 0x80;
+                    this->ctx.stat[0] |= 0x80;
                     if (this->isEnabledInterrupt()) {
                         this->detectBlank(this->arg);
                     }
@@ -132,8 +132,9 @@ class V9938
 
     inline unsigned char readPort1()
     {
-        unsigned char result = this->ctx.stat;
-        this->ctx.stat &= 0b01011111;
+        int sn = this->ctx.reg[15] & 0b00001111;
+        unsigned char result = this->ctx.stat[sn];
+        if (0 == sn) this->ctx.stat[0] &= 0b01011111;
         this->ctx.latch = 0;
         return result;
     }
@@ -257,7 +258,7 @@ class V9938
 #endif
         bool previousInterrupt = this->isEnabledInterrupt();
         this->ctx.reg[rn] = value;
-        if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat & 0x80) {
+        if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat[0] & 0x80) {
             this->detectBlank(this->arg);
         }
 #ifdef DEBUG
@@ -396,19 +397,19 @@ class V9938
                     if (y <= lineNumber && lineNumber < y + 32) {
                         sn++;
                         if (5 <= sn) {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= 0b01000000 | i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
                             break;
                         } else {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -421,7 +422,7 @@ class V9938
                         cur += 16;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -437,18 +438,18 @@ class V9938
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
                         if (5 <= sn) {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= 0b01000000 | i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
                             break;
                         } else {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -466,19 +467,19 @@ class V9938
                     if (y <= lineNumber && lineNumber < y + 16) {
                         sn++;
                         if (5 <= sn) {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= 0b01000000 | i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
                             break;
                         } else {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -491,7 +492,7 @@ class V9938
                         cur += 16;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -507,18 +508,18 @@ class V9938
                     if (y <= lineNumber && lineNumber < y + 8) {
                         sn++;
                         if (5 <= sn) {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= 0b01000000 | i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
                             break;
                         } else {
-                            this->ctx.stat &= 0b11100000;
-                            this->ctx.stat |= i;
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x]) {
-                                this->ctx.stat |= 0b00100000;
+                                this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
