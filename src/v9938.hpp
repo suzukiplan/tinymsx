@@ -46,7 +46,7 @@ class V9938
         int countV;
         int reserved;
         unsigned char ram[0x4000];
-        unsigned char reg[8];
+        unsigned char reg[64];
         unsigned char tmpAddr[2];
         unsigned short addr;
         unsigned char stat;
@@ -131,7 +131,7 @@ class V9938
         }
     }
 
-    inline unsigned char readData()
+    inline unsigned char readPort0()
     {
         unsigned char result = this->ctx.readBuffer;
         this->readVideoMemory();
@@ -139,7 +139,7 @@ class V9938
         return result;
     }
 
-    inline unsigned char readStatus()
+    inline unsigned char readPort1()
     {
         unsigned char result = this->ctx.stat;
         this->ctx.stat &= 0b01011111;
@@ -147,7 +147,7 @@ class V9938
         return result;
     }
 
-    inline void writeData(unsigned char value)
+    inline void writePort0(unsigned char value)
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
@@ -155,13 +155,14 @@ class V9938
         this->ctx.latch = 0;
     }
 
-    inline void writeAddress(unsigned char value)
+    inline void writePort1(unsigned char value)
     {
         this->ctx.latch &= 1;
         this->ctx.tmpAddr[this->ctx.latch++] = value;
         if (2 == this->ctx.latch) {
-            if (this->ctx.tmpAddr[1] & 0b10000000) {
-                this->updateRegister();
+            if ((this->ctx.tmpAddr[1] & 0b11000000) == 0b10000000) {
+                // Direct access to VDP registers
+                this->updateRegister(this->ctx.tmpAddr[1] & 0b00111111, this->ctx.tmpAddr[0]);
             } else if (this->ctx.tmpAddr[1] & 0b01000000) {
                 this->updateAddress();
             } else {
@@ -171,6 +172,16 @@ class V9938
         } else if (1 == this->ctx.latch) {
             this->ctx.addr &= 0xFF00;
             this->ctx.addr |= this->ctx.tmpAddr[0];
+        }
+    }
+
+    inline void writePort3(unsigned char value)
+    {
+        // Indirect access to registers through R#17 (Control Register Pointer)
+        this->updateRegister(this->ctx.reg[17] & 0b00111111, value);
+        if ((this->ctx.reg[17] & 0b11000000) == 0b00000000) {
+            this->ctx.reg[17]++;
+            this->ctx.reg[17] &= 0b00111111;
         }
     }
 
@@ -206,7 +217,7 @@ class V9938
         this->ctx.readBuffer = this->ctx.ram[this->ctx.addr++];
     }
 
-    inline void updateRegister()
+    inline void updateRegister(int rn, unsigned char value)
     {
 #ifdef DEBUG
         int previousMode = 0;
@@ -218,7 +229,7 @@ class V9938
         bool externalVideoInput = this->isEnabledExternalVideoInput();
 #endif
         bool previousInterrupt = this->isEnabledInterrupt();
-        this->ctx.reg[this->ctx.tmpAddr[1] & 0b00001111] = this->ctx.tmpAddr[0];
+        this->ctx.reg[rn] = value;
         if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat & 0x80) {
             this->detectBlank(this->arg);
         }
