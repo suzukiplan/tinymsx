@@ -46,15 +46,16 @@ class V9938
         int countH;
         int countV;
         int reserved;
-        unsigned char ram[0x4000];
+        unsigned char ram[0x20000];
         unsigned char reg[64];
         unsigned char pal[16][2];
         unsigned char tmpAddr[2];
         unsigned char stat[16];
-        unsigned short addr;
+        unsigned int addr;
         unsigned char latch;
         unsigned char readBuffer;
     } ctx;
+    unsigned char exRam[0x10000];
 
     V9938()
     {
@@ -94,7 +95,8 @@ class V9938
         return 0;                              // Mode 0
     }
 
-    inline int getVramSize() { return ctx.reg[1] & 0b10000000 ? 0x4000 : 0x1000; }
+    inline bool isEnableExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
+    inline int getVramSize() { return 0x20000; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
     inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
@@ -143,7 +145,12 @@ class V9938
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        this->ctx.ram[this->ctx.addr++] = this->ctx.readBuffer;
+        if (this->isEnableExpansionRAM()) {
+            this->exRam[this->ctx.addr & 0xFFFF] = this->ctx.readBuffer;
+        } else {
+            this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
+        }
+        this->ctx.addr++;
         this->ctx.latch = 0;
     }
 
@@ -236,13 +243,16 @@ class V9938
         this->ctx.addr = this->ctx.tmpAddr[1];
         this->ctx.addr <<= 8;
         this->ctx.addr |= this->ctx.tmpAddr[0];
-        this->ctx.addr &= this->getVramSize() - 1;
+        unsigned int ha = this->ctx.reg[14] & 0b00000111;
+        ha <<= 14;
+        this->ctx.addr += ha;
     }
 
     inline void readVideoMemory()
     {
         this->ctx.addr &= this->getVramSize() - 1;
-        this->ctx.readBuffer = this->ctx.ram[this->ctx.addr++];
+        this->ctx.readBuffer = this->isEnableExpansionRAM() ? this->exRam[this->ctx.addr & 0xFFFF] : this->ctx.ram[this->ctx.addr];
+        this->ctx.addr++;
     }
 
     inline void updateRegister(int rn, unsigned char value)
