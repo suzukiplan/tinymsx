@@ -48,6 +48,7 @@ class V9938
         int reserved;
         unsigned char ram[0x4000];
         unsigned char reg[64];
+        unsigned char pal[16][2];
         unsigned char tmpAddr[2];
         unsigned short addr;
         unsigned char stat;
@@ -67,34 +68,22 @@ class V9938
         this->arg = arg;
         this->detectBlank = detectBlank;
         this->detectBreak = detectBreak;
-        unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
-        switch (colorMode) {
-            case 0:
-                for (int i = 0; i < 16; i++) {
-                    this->palette[i] = 0;
-                    this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 9;
-                    this->palette[i] |= (rgb[i] & 0b000000001111100000000000) >> 6;
-                    this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
-                }
-                break;
-            case 1:
-                for (int i = 0; i < 16; i++) {
-                    this->palette[i] = 0;
-                    this->palette[i] |= (rgb[i] & 0b111110000000000000000000) >> 8;
-                    this->palette[i] |= (rgb[i] & 0b000000001111110000000000) >> 5;
-                    this->palette[i] |= (rgb[i] & 0b000000000000000011111000) >> 3;
-                }
-                break;
-            default:
-                memset(this->palette, 0, sizeof(this->palette));
-        }
         this->reset();
     }
 
     void reset()
     {
+        static unsigned int rgb[16] = {0x000000, 0x000000, 0x3EB849, 0x74D07D, 0x5955E0, 0x8076F1, 0xB95E51, 0x65DBEF, 0xDB6559, 0xFF897D, 0xCCC35E, 0xDED087, 0x3AA241, 0xB766B5, 0xCCCCCC, 0xFFFFFF};
         memset(display, 0, sizeof(display));
         memset(&ctx, 0, sizeof(ctx));
+        for (int i = 0; i < 16; i++) {
+            this->ctx.pal[i][0] = 0;
+            this->ctx.pal[i][1] = 0;
+            this->ctx.pal[i][0] |= (rgb[i] & 0b111000000000000000000000) >> 17;
+            this->ctx.pal[i][1] |= (rgb[i] & 0b000000001110000000000000) >> 13;
+            this->ctx.pal[i][0] |= (rgb[i] & 0b000000000000000011100000) >> 5;
+            updatePaletteCacheFromRegister(i);
+        }
     }
 
     inline int getVideoMode()
@@ -177,6 +166,18 @@ class V9938
         }
     }
 
+    inline void writePort2(unsigned char value)
+    {
+        this->ctx.latch &= 1;
+        int pn = this->ctx.reg[16] & 0b00001111;
+        this->ctx.pal[pn][this->ctx.latch++] = value;
+        if (2 == this->ctx.latch) {
+            updatePaletteCacheFromRegister(pn);
+            this->ctx.reg[16]++;
+            this->ctx.reg[16] &= 0b00001111;
+        }
+    }
+
     inline void writePort3(unsigned char value)
     {
         // Indirect access to registers through R#17 (Control Register Pointer)
@@ -203,6 +204,30 @@ class V9938
                 this->renderEmptyScanline(lineNumber);
             }
         }
+    }
+
+    inline void updatePaletteCacheFromRegister(int pn)
+    {
+        unsigned short r = this->ctx.pal[pn][0] & 0b01110000;
+        unsigned short b = this->ctx.pal[pn][0] & 0b00000111;
+        unsigned short g = this->ctx.pal[pn][1] & 0b00000111;
+        switch (this->colorMode) {
+            case 0: // RGB555
+                r <<= 8;
+                g <<= 7;
+                b <<= 2;
+                break;
+            case 1: // RGB565
+                r <<= 9;
+                g <<= 8;
+                b <<= 2;
+                break;
+            default:
+                r = 0;
+                g = 0;
+                b = 0;
+        }
+        this->palette[pn] = r | g | b;
     }
 
     inline void updateAddress()
