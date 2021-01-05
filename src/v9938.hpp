@@ -89,10 +89,13 @@ class V9938
 
     inline int getVideoMode()
     {
-        if (ctx.reg[1] & 0b00010000) return 1; // Mode 1
-        if (ctx.reg[0] & 0b00000010) return 2; // Mode 2
-        if (ctx.reg[1] & 0b00001000) return 3; // Mode 3
-        return 0;                              // Mode 0
+        int mode = 0;
+        if (ctx.reg[1] & 0b00010000) mode |= 0b00001;
+        if (ctx.reg[1] & 0b00001000) mode |= 0b00010;
+        if (ctx.reg[0] & 0b00000010) mode |= 0b00100;
+        if (ctx.reg[0] & 0b00000100) mode |= 0b01000;
+        if (ctx.reg[0] & 0b00001000) mode |= 0b10000;
+        return mode;
     }
 
     inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
@@ -202,10 +205,16 @@ class V9938
         if (0 <= lineNumber && lineNumber < 192) {
             if (this->isEnabledScreen()) {
                 switch (this->getVideoMode()) {
-                    case 0: this->renderScanlineMode0(lineNumber); break;
-                    case 1: this->renderEmptyScanline(lineNumber); break;
-                    case 2: this->renderScanlineMode2(lineNumber); break;
-                    case 3: this->renderScanlineMode3(lineNumber); break;
+                    case 0b00000: this->renderScanlineModeG1(lineNumber); break;
+                    case 0b00100: this->renderScanlineModeG2(lineNumber, false); break;
+                    case 0b01000: this->renderScanlineModeG2(lineNumber, false); break;
+                    case 0b01100: this->renderScanlineModeG4(lineNumber); break;
+                    case 0b10000: this->renderScanlineModeG5(lineNumber); break;
+                    case 0b10100: this->renderScanlineModeG6(lineNumber); break;
+                    case 0b11100: this->renderScanlineModeG7(lineNumber); break;
+                    case 0b00010: this->renderEmptyScanline(lineNumber); break; // MULTI COLOR (unimplemented)
+                    case 0b00001: this->renderEmptyScanline(lineNumber); break; // TEXT1 (unimplemented)
+                    case 0b01001: this->renderEmptyScanline(lineNumber); break; // TEXT2 (unimplemented)
                     default: this->renderEmptyScanline(lineNumber);
                 }
             } else {
@@ -291,7 +300,7 @@ class V9938
 #endif
     }
 
-    inline void renderScanlineMode0(int lineNumber)
+    inline void renderScanlineModeG1(int lineNumber)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
         int ct = this->ctx.reg[3] << 6;
@@ -317,10 +326,10 @@ class V9938
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSpritesMode0(lineNumber);
+        renderSpritesMode1(lineNumber);
     }
 
-    inline void renderScanlineMode2(int lineNumber)
+    inline void renderScanlineModeG2(int lineNumber, bool isSpriteMode2)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
         int ct = (this->ctx.reg[3] & 0b10000000) << 6;
@@ -353,13 +362,35 @@ class V9938
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSpritesMode0(lineNumber);
+        if (isSpriteMode2) {
+            renderSpritesMode2(lineNumber);
+        } else {
+            renderSpritesMode1(lineNumber);
+        }
     }
 
-    inline void renderScanlineMode3(int lineNumber)
+    inline void renderScanlineModeG4(int lineNumber)
     {
-        // todo: draw Mode 3 characters
-        renderSpritesMode0(lineNumber);
+        // TODO
+        renderSpritesMode2(lineNumber);
+    }
+
+    inline void renderScanlineModeG5(int lineNumber)
+    {
+        // TODO
+        renderSpritesMode2(lineNumber);
+    }
+
+    inline void renderScanlineModeG6(int lineNumber)
+    {
+        // TODO
+        renderSpritesMode2(lineNumber);
+    }
+
+    inline void renderScanlineModeG7(int lineNumber)
+    {
+        // TODO
+        renderSpritesMode2(lineNumber);
     }
 
     inline void renderEmptyScanline(int lineNumber)
@@ -371,7 +402,7 @@ class V9938
         }
     }
 
-    inline void renderSpritesMode0(int lineNumber)
+    inline void renderSpritesMode1(int lineNumber)
     {
         static const unsigned char bit[8] = {
             0b10000000,
@@ -543,6 +574,11 @@ class V9938
                 }
             }
         }
+    }
+
+    inline void renderSpritesMode2(int lineNumber)
+    {
+        // TODO
     }
 };
 
