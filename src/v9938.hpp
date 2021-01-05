@@ -38,7 +38,7 @@ class V9938
     void (*detectBreak)(void* arg);
 
   public:
-    unsigned short display[256 * 192];
+    unsigned short display[256 * 212];
     unsigned short palette[16];
 
     struct Context {
@@ -95,7 +95,7 @@ class V9938
         return 0;                              // Mode 0
     }
 
-    inline bool isEnableExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
+    inline bool isExpansionRAM() { return ctx.reg[45] & 0b01000000 ? true : false; }
     inline int getVramSize() { return 0x20000; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
@@ -145,7 +145,7 @@ class V9938
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        if (this->isEnableExpansionRAM()) {
+        if (this->isExpansionRAM()) {
             this->exRam[this->ctx.addr & 0xFFFF] = this->ctx.readBuffer;
         } else {
             this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
@@ -251,7 +251,7 @@ class V9938
     inline void readVideoMemory()
     {
         this->ctx.addr &= this->getVramSize() - 1;
-        this->ctx.readBuffer = this->isEnableExpansionRAM() ? this->exRam[this->ctx.addr & 0xFFFF] : this->ctx.ram[this->ctx.addr];
+        this->ctx.readBuffer = this->isExpansionRAM() ? this->exRam[this->ctx.addr & 0xFFFF] : this->ctx.ram[this->ctx.addr];
         this->ctx.addr++;
     }
 
