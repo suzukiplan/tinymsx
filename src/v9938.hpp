@@ -32,6 +32,7 @@
 class V9938
 {
   private:
+    int colorMode;
     void* arg;
     void (*detectBlank)(void* arg);
     void (*detectBreak)(void* arg);
@@ -62,6 +63,7 @@ class V9938
 
     void initialize(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
     {
+        this->colorMode = colorMode;
         this->arg = arg;
         this->detectBlank = detectBlank;
         this->detectBreak = detectBreak;
@@ -279,7 +281,7 @@ class V9938
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSprites(lineNumber);
+        renderSpritesMode0(lineNumber);
     }
 
     inline void renderScanlineMode2(int lineNumber)
@@ -315,13 +317,13 @@ class V9938
             this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
             this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
         }
-        renderSprites(lineNumber);
+        renderSpritesMode0(lineNumber);
     }
 
     inline void renderScanlineMode3(int lineNumber)
     {
         // todo: draw Mode 3 characters
-        renderSprites(lineNumber);
+        renderSpritesMode0(lineNumber);
     }
 
     inline void renderEmptyScanline(int lineNumber)
@@ -333,7 +335,7 @@ class V9938
         }
     }
 
-    inline void renderSprites(int lineNumber)
+    inline void renderSpritesMode0(int lineNumber)
     {
         static const unsigned char bit[8] = {
             0b10000000,
