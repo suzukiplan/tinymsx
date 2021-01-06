@@ -34,7 +34,7 @@ class V9938
   private:
     int colorMode;
     void* arg;
-    void (*detectBlank)(void* arg);
+    void (*detectInterrupt)(void* arg, int ie);
     void (*detectBreak)(void* arg);
 
   public:
@@ -63,11 +63,11 @@ class V9938
         this->reset();
     }
 
-    void initialize(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
+    void initialize(int colorMode, void* arg, void (*detectInterrupt)(void*, int), void (*detectBreak)(void*))
     {
         this->colorMode = colorMode;
         this->arg = arg;
-        this->detectBlank = detectBlank;
+        this->detectInterrupt = detectInterrupt;
         this->detectBreak = detectBreak;
         this->reset();
     }
@@ -102,21 +102,26 @@ class V9938
     inline int getVramSize() { return 0x20000; }
     inline bool isEnabledExternalVideoInput() { return ctx.reg[0] & 0b00000001 ? true : false; }
     inline bool isEnabledScreen() { return ctx.reg[1] & 0b01000000 ? true : false; }
-    inline bool isEnabledInterrupt() { return ctx.reg[1] & 0b00100000 ? true : false; }
+    inline bool isEnabledInterrupt0() { return ctx.reg[1] & 0b00100000 ? true : false; }
+    inline bool isEnabledInterrupt1() { return ctx.reg[0] & 0b00010000 ? true : false; }
+    inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
 
     inline void tick()
     {
         this->ctx.countH++;
-        if (293 == this->ctx.countH) {
+        if (37 == this->ctx.countH && this->isEnabledScreen() && this->isEnabledInterrupt1()) {
+            this->ctx.stat[1] |= this->ctx.countV == this->ctx.reg[19] ? 0x01 : 0x00;
+            this->detectInterrupt(this->arg, 1);
+        } else if (293 == this->ctx.countH) {
             this->renderScanline(this->ctx.countV - 40);
         } else if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
                 case 251:
                     this->ctx.stat[0] |= 0x80;
-                    if (this->isEnabledInterrupt()) {
-                        this->detectBlank(this->arg);
+                    if (this->isEnabledInterrupt0()) {
+                        this->detectInterrupt(this->arg, 0);
                     }
                     break;
                 case 262:
@@ -275,10 +280,10 @@ class V9938
         bool screen = this->isEnabledScreen();
         bool externalVideoInput = this->isEnabledExternalVideoInput();
 #endif
-        bool previousInterrupt = this->isEnabledInterrupt();
+        bool previousInterrupt = this->isEnabledInterrupt0();
         this->ctx.reg[rn] = value;
-        if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat[0] & 0x80) {
-            this->detectBlank(this->arg);
+        if (!previousInterrupt && this->isEnabledInterrupt0() && this->ctx.stat[0] & 0x80) {
+            this->detectInterrupt(this->arg, 0);
         }
 #ifdef DEBUG
         int currentMode = 0;
