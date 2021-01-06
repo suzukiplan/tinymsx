@@ -144,8 +144,10 @@ class V9938
     {
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
-        if (0 == sn) this->ctx.stat[0] &= 0b01011111;
-        else if (1 == sn) this->ctx.stat[1] &= 0b11111110; // NOTE: need reset Bit-7 when using light pen
+        switch (sn) {
+            case 0: this->ctx.stat[0] &= 0b01011111; break;
+            case 1: if (1 == sn) this->ctx.stat[1] &= 0b11111110; break;
+        }
         this->ctx.latch = 0;
         return result;
     }
