@@ -110,10 +110,14 @@ class V9938
     inline void tick()
     {
         this->ctx.countH++;
-        if (37 == this->ctx.countH && this->isEnabledScreen() && this->isEnabledInterrupt1()) {
-            this->ctx.stat[1] |= this->ctx.countV == this->ctx.reg[19] ? 0x01 : 0x00;
-            this->detectInterrupt(this->arg, 1);
+        if (37 == this->ctx.countH) {
+            this->ctx.stat[2] &= 0b11011111; // reset HR flag
+            if (this->isEnabledScreen() && this->isEnabledInterrupt1()) {
+                this->ctx.stat[1] |= this->ctx.countV == this->ctx.reg[19] ? 0x01 : 0x00;
+                this->detectInterrupt(this->arg, 1);
+            }
         } else if (293 == this->ctx.countH) {
+            this->ctx.stat[2] |= 0b00100000; // set HR flag
             this->renderScanline(this->ctx.countV - 40);
         } else if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
@@ -142,14 +146,13 @@ class V9938
 
     inline unsigned char readPort1()
     {
-        static const unsigned char readMask[16] = {
-            0b01011111, 0b11111110, 0b11111111, 0b11111111,
-            0b11111111, 0b11111111, 0b11111111, 0b11111111,
-            0b11111111, 0b11111111, 0b11111111, 0b11111111,
-            0b11111111, 0b11111111, 0b11111111, 0b11111111};
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
-        this->ctx.stat[sn] &= readMask[sn];
+        switch (sn) {
+            case 0: this->ctx.stat[sn] &= 0b01011111; break;
+            case 1: this->ctx.stat[sn] &= 0b11111110; break;
+            case 2: result |= 0b10001100; break;
+        }
         this->ctx.latch = 0;
         return result;
     }
@@ -210,9 +213,21 @@ class V9938
     }
 
   private:
+    inline int getLineNumber()
+    {
+        switch (this->getVideoMode()) {
+            case 0b00000: return 192; // G1
+            case 0b00100: return 192; // G2
+            case 0b01000: return 192; // G3
+            case 0b00001: return 192; // TEXT1
+            default: return this->ctx.reg[9] & 0x80 ? 212 : 192;
+        }
+    }
+
     inline void renderScanline(int lineNumber)
     {
-        if (0 <= lineNumber && lineNumber < 192) {
+        if (0 <= lineNumber && lineNumber < this->getLineNumber()) {
+            this->ctx.stat[2] &= 0b10111111; // reset VR flag
             if (this->isEnabledScreen()) {
                 switch (this->getVideoMode()) {
                     case 0b00000: this->renderScanlineModeG1(lineNumber); break;
@@ -230,6 +245,8 @@ class V9938
             } else {
                 this->renderEmptyScanline(lineNumber);
             }
+        } else {
+            this->ctx.stat[2] |= 0b01000000; // set VR flag
         }
     }
 
