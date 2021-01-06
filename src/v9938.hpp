@@ -398,7 +398,13 @@ class V9938
 
     inline void renderScanlineModeG4(int lineNumber)
     {
-        // TODO
+        int pn = (this->ctx.reg[2] & 0b01111111) << 10;
+        int curD = lineNumber * 256;
+        int curP = lineNumber * 128;
+        for (int i = 0; i < 128; i++) {
+            this->display[curD++] = this->palette[(this->ctx.ram[curP] & 0xF0) >> 4];
+            this->display[curD++] = this->palette[this->ctx.ram[curP++] & 0x0F];
+        }
         renderSpritesMode2(lineNumber);
     }
 
