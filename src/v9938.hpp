@@ -146,7 +146,7 @@ class V9938
         unsigned char result = this->ctx.stat[sn];
         switch (sn) {
             case 0: this->ctx.stat[0] &= 0b01011111; break;
-            case 1: if (1 == sn) this->ctx.stat[1] &= 0b11111110; break;
+            case 1: this->ctx.stat[1] &= 0b11111110; break;
         }
         this->ctx.latch = 0;
         return result;
