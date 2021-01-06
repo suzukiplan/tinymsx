@@ -410,19 +410,43 @@ class V9938
 
     inline void renderScanlineModeG5(int lineNumber)
     {
-        // TODO
+        renderEmptyScanline(lineNumber);
         renderSpritesMode2(lineNumber);
     }
 
     inline void renderScanlineModeG6(int lineNumber)
     {
-        // TODO
+        renderEmptyScanline(lineNumber);
         renderSpritesMode2(lineNumber);
+    }
+
+    inline unsigned short convertColor_8bit_to_16bit(unsigned char c)
+    {
+        switch (this->colorMode) {
+            case 0: {
+                unsigned short result = (c & 0b00011100) << 10;
+                result |= (c & 0b11100000) >> 3;
+                result |= (c & 0b00000011) << 3;
+                return result;
+            }
+            case 1: {
+                unsigned short result = (c & 0b00011100) << 11;
+                result |= (c & 0b11100000) >> 2;
+                result |= (c & 0b00000011) << 3;
+                return result;
+            }
+            default: return 0;
+        }
     }
 
     inline void renderScanlineModeG7(int lineNumber)
     {
-        // TODO
+        int pn = (this->ctx.reg[2] & 0b01111111) << 10;
+        int curD = lineNumber * 256;
+        int curP = lineNumber * 256;
+        for (int i = 0; i < 256; i++) {
+            this->display[curD++] = convertColor_8bit_to_16bit(this->ctx.ram[curP++]);
+        }
         renderSpritesMode2(lineNumber);
     }
 
