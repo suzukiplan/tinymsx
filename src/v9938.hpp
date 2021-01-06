@@ -142,8 +142,11 @@ class V9938
 
     inline unsigned char readPort1()
     {
-        static unsigned char readMask[16] = {0b01011111, 0b11111110, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111,
-                                             0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111, 0b11111111};
+        static const unsigned char readMask[16] = {
+            0b01011111, 0b11111110, 0b11111111, 0b11111111,
+            0b11111111, 0b11111111, 0b11111111, 0b11111111,
+            0b11111111, 0b11111111, 0b11111111, 0b11111111,
+            0b11111111, 0b11111111, 0b11111111, 0b11111111};
         int sn = this->ctx.reg[15] & 0b00001111;
         unsigned char result = this->ctx.stat[sn];
         this->ctx.stat[sn] &= readMask[sn];
