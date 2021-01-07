@@ -675,7 +675,8 @@ class V9938
         }
     }
 
-    inline unsigned char logicalOperation(int lo, unsigned char dc, unsigned char sc) {
+    inline unsigned char logicalOperation(int lo, unsigned char dc, unsigned char sc)
+    {
         if ((lo & 0b1000) && sc == 0) return dc;
         switch (lo & 0b0111) {
             case 0b000: return sc;
@@ -687,7 +688,8 @@ class V9938
         }
     }
 
-    inline unsigned short getInt16FromRegister(int rn) {
+    inline unsigned short getInt16FromRegister(int rn)
+    {
         unsigned short result = this->ctx.reg[rn + 1];
         result <<= 8;
         result |= this->ctx.reg[rn];
@@ -699,7 +701,8 @@ class V9938
     inline unsigned short getNumberOfDotsX() { return this->getInt16FromRegister(40); }
     inline unsigned short getNumberOfDotsY() { return this->getInt16FromRegister(42); }
 
-    inline int getDestinationAddr() {
+    inline int getDestinationAddr()
+    {
         int dx = this->getDestinationX();
         int dy = this->getDestinationY();
         dx += this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
@@ -746,7 +749,9 @@ class V9938
             default: return 0;
         }
     }
-    inline void executeCommandHMMC() {
+
+    inline void executeCommandHMMC()
+    {
         int ax = this->getCommandAddX();
         switch (ax) {
             case 2:
