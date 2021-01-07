@@ -748,8 +748,19 @@ class V9938
     }
     inline void executeCommandHMMC() {
         unsigned char sc = this->ctx.reg[44];
+        int ax = this->getCommandAddX();
+        switch (ax) {
+            case 2:
+                this->ctx.reg[36] &= 0b11111110;
+                this->ctx.reg[40] &= 0b11111110;
+                break;
+            case 4:
+                this->ctx.reg[36] &= 0b11111100;
+                this->ctx.reg[40] &= 0b11111100;
+                break;
+        }
         this->ctx.ram[this->getDestinationAddr()] = sc;
-        this->ctx.commandX += this->getCommandAddX();
+        this->ctx.commandX += ax;
         if (this->getNumberOfDotsX() == this->ctx.commandX) {
             this->ctx.commandX = 0;
             this->ctx.commandY++;
