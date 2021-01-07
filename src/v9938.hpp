@@ -696,45 +696,58 @@ class V9938
         return result;
     }
 
+    inline unsigned short getSourceY() { return this->getInt16FromRegister(34); }
     inline unsigned short getDestinationX() { return this->getInt16FromRegister(36); }
     inline unsigned short getDestinationY() { return this->getInt16FromRegister(38); }
     inline unsigned short getNumberOfDotsX() { return this->getInt16FromRegister(40); }
     inline unsigned short getNumberOfDotsY() { return this->getInt16FromRegister(42); }
 
-    inline int getDestinationAddr()
+    inline void getEdge(int* ex, int* ey, int* dotsPerByte)
     {
-        int dx = this->getDestinationX();
-        int dy = this->getDestinationY();
-        dx += this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
-        dy += this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
         switch (this->getVideoMode()) {
             case 0b01100: // G4
-                while (255 < dx) dx -= 256;
-                while (dx < 0) dx += 256;
-                while (1023 < dy) dy -= 1024;
-                while (dy < 0) dy += 1024;
-                dx /= 2;
-                return dy * 128 + dx;
+                *ex = 256;
+                *ey = 1024;
+                *dotsPerByte = 2;
+                break;
             case 0b10000: // G5
-                while (511 < dx) dx -= 512;
-                while (dx < 0) dx += 512;
-                while (1023 < dy) dy -= 1024;
-                while (dy < 0) dy += 1024;
-                dx /= 4;
-                return dy * 128 + dx;
+                *ex = 512;
+                *ey = 1024;
+                *dotsPerByte = 4;
+                break;
             case 0b10100: // G6
-                while (255 < dx) dx -= 256;
-                while (dx < 0) dx += 256;
-                while (511 < dy) dy -= 512;
-                while (dy < 0) dy += 512;
-                dx /= 2;
-                return dy * 128 + dx;
+                *ex = 256;
+                *ey = 512;
+                *dotsPerByte = 2;
+                break;
             case 0b11100: // G7
-                while (255 < dx) dx -= 256;
-                while (dx < 0) dx += 256;
-                while (511 < dy) dy -= 512;
-                while (dy < 0) dy += 512;
-                return dy * 256 + dx;
+                *ex = 256;
+                *ey = 512;
+                *dotsPerByte = 1;
+                break;
+            default:
+                *ex = 0;
+                *ey = 0;
+                *dotsPerByte = 1;
+        }
+    }
+
+    inline int getDestinationAddr(int dx, int dy, int ox, int oy)
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        dx += ox;
+        dy += oy;
+        while (ex <= dx) dx -= ex;
+        while (ex < 0) dx += ex;
+        while (ey <= dy) dy -= ey;
+        while (dy < 0) dy += ey;
+        dx /= dpb;
+        switch (this->getVideoMode()) {
+            case 0b01100: return dy * 128 + dx;
+            case 0b10000: return dy * 128 + dx;
+            case 0b10100: return dy * 128 + dx;
+            case 0b11100: return dy * 256 + dx;
             default: return 0;
         }
     }
@@ -763,7 +776,12 @@ class V9938
                 this->ctx.reg[40] &= 0b11111100;
                 break;
         }
-        this->ctx.ram[this->getDestinationAddr()] = this->ctx.reg[44];
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
+        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
+        // NOTE: in fact, the transfer is not completed immediatly, but it is completed immediatly.
+        this->ctx.ram[this->getDestinationAddr(dx, dy, ox, oy)] = this->ctx.reg[44];
         this->ctx.commandX += ax;
         if (this->getNumberOfDotsX() == this->ctx.commandX) {
             this->ctx.commandX = 0;
@@ -775,7 +793,40 @@ class V9938
         }
     }
 
-    inline void executeCommandYMMM() {}
+    inline void executeCommandYMMM()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        switch (this->getCommandAddX()) {
+            case 2: this->ctx.reg[36] &= 0b11111110; break;
+            case 4: this->ctx.reg[36] &= 0b11111100; break;
+        }
+        int sy = this->getSourceY();
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        int ny = this->getNumberOfDotsY();
+        int baseX = this->ctx.reg[45] & 0b000000100 ? 0 : dx;
+        int size = baseX ? ex - baseX : baseX;
+        size /= dpb;
+        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
+        while (ny--) {
+            memmove(&this->ctx.ram[this->getDestinationAddr(baseX, dy, 0, 0)], &this->ctx.ram[this->getDestinationAddr(baseX, sy, 0, 0)], size);
+            if (this->ctx.reg[45] & 0b000001000) {
+                dy--;
+                sy--;
+                if (dy < 0) dy += ey;
+                if (sy < 0) sy += ey;
+            } else {
+                dy++;
+                sy++;
+                if (ey <= dy) dy -= ey;
+                if (ey <= sy) sy -= ey;
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
     inline void executeCommandHMMM() {}
     inline void executeCommandHMMV() {}
     inline void executeCommandLMMC(int lo) {}
