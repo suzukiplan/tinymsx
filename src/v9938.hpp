@@ -58,7 +58,6 @@ class V9938
         unsigned short commandX;
         unsigned short commandY;
     } ctx;
-    unsigned char exRam[0x10000];
 
     V9938()
     {
@@ -164,11 +163,7 @@ class V9938
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        if (this->isExpansionRAM()) {
-            this->exRam[this->ctx.addr & 0xFFFF] = this->ctx.readBuffer;
-        } else {
-            this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
-        }
+        this->ctx.ram[this->ctx.addr] = this->ctx.readBuffer;
         this->ctx.addr++;
         this->ctx.latch = 0;
     }
@@ -290,7 +285,7 @@ class V9938
     inline void readVideoMemory()
     {
         this->ctx.addr &= this->getVramSize() - 1;
-        this->ctx.readBuffer = this->isExpansionRAM() ? this->exRam[this->ctx.addr & 0xFFFF] : this->ctx.ram[this->ctx.addr];
+        this->ctx.readBuffer = this->ctx.ram[this->ctx.addr & 0x1FFFF];
         this->ctx.addr++;
     }
 
