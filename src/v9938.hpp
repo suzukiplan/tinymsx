@@ -54,6 +54,9 @@ class V9938
         unsigned int addr;
         unsigned char latch;
         unsigned char readBuffer;
+        unsigned char command;
+        unsigned short commandX;
+        unsigned short commandY;
     } ctx;
     unsigned char exRam[0x10000];
 
@@ -307,7 +310,11 @@ class V9938
         if (!previousInterrupt && this->isEnabledInterrupt0() && this->ctx.stat[0] & 0x80) {
             this->detectInterrupt(this->arg, 0);
         }
-        if (46 == rn) {
+        if (44 == rn && this->ctx.command) {
+            switch (this->ctx.commandX) {
+                case 0b1111: this->executeCommandHMMC(); break;
+            }
+        } else if (46 == rn) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
         }
 #ifdef DEBUG
@@ -644,7 +651,11 @@ class V9938
     inline void executeCommand(int cm, int lo)
     {
         if (cm) {
-            if (this->ctx.stat[2] & 0b01) return; // already executing
+            if (this->ctx.stat[2] & 0b00000001) return; // already executing
+            this->ctx.command = cm;
+            this->ctx.commandX = 0;
+            this->ctx.commandY = 0;
+            this->ctx.stat[2] |= 0b00000001;
             switch (cm) {
                 case 0b1111: this->executeCommandHMMC(); break;
                 case 0b1110: this->executeCommandYMMM(); break;
@@ -676,7 +687,79 @@ class V9938
         }
     }
 
-    inline void executeCommandHMMC() {}
+    inline unsigned short getInt16FromRegister(int rn) {
+        unsigned short result = this->ctx.reg[rn + 1];
+        result <<= 8;
+        result |= this->ctx.reg[rn];
+        return result;
+    }
+
+    inline unsigned short getDestinationX() { return this->getInt16FromRegister(36); }
+    inline unsigned short getDestinationY() { return this->getInt16FromRegister(38); }
+    inline unsigned short getNumberOfDotsX() { return this->getInt16FromRegister(40); }
+    inline unsigned short getNumberOfDotsY() { return this->getInt16FromRegister(42); }
+
+    inline int getDestinationAddr() {
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        dx += this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
+        dy += this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
+        switch (this->getVideoMode()) {
+            case 0b01100: // G4
+                while (255 < dx) dx -= 256;
+                while (dx < 0) dx += 256;
+                while (1023 < dy) dy -= 1024;
+                while (dy < 0) dy += 1024;
+                dx /= 2;
+                return dy * 128 + dx;
+            case 0b10000: // G5
+                while (511 < dx) dx -= 512;
+                while (dx < 0) dx += 512;
+                while (1023 < dy) dy -= 1024;
+                while (dy < 0) dy += 1024;
+                dx /= 4;
+                return dy * 128 + dx;
+            case 0b10100: // G6
+                while (255 < dx) dx -= 256;
+                while (dx < 0) dx += 256;
+                while (511 < dy) dy -= 512;
+                while (dy < 0) dy += 512;
+                dx /= 2;
+                return dy * 128 + dx;
+            case 0b11100: // G7
+                while (255 < dx) dx -= 256;
+                while (dx < 0) dx += 256;
+                while (511 < dy) dy -= 512;
+                while (dy < 0) dy += 512;
+                return dy * 256 + dx;
+            default: return 0;
+        }
+    }
+
+    inline int getCommandAddX()
+    {
+        switch (this->getVideoMode()) {
+            case 0b01100: return 2; // G4
+            case 0b10000: return 4; // G5
+            case 0b10100: return 2; // G6
+            case 0b11100: return 1; // G7
+            default: return 0;
+        }
+    }
+    inline void executeCommandHMMC() {
+        unsigned char sc = this->ctx.reg[44];
+        this->ctx.ram[this->getDestinationAddr()] = sc;
+        this->ctx.commandX += this->getCommandAddX();
+        if (this->getNumberOfDotsX() == this->ctx.commandX) {
+            this->ctx.commandX = 0;
+            this->ctx.commandY++;
+            if (this->getNumberOfDotsY() == this->ctx.commandY) {
+                this->ctx.command = 0;
+                this->ctx.stat[2] &= 0b11111110;
+            }
+        }
+    }
+
     inline void executeCommandYMMM() {}
     inline void executeCommandHMMM() {}
     inline void executeCommandHMMV() {}
