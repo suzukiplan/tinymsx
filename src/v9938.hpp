@@ -696,11 +696,12 @@ class V9938
         return result;
     }
 
-    inline unsigned short getSourceY() { return this->getInt16FromRegister(34); }
-    inline unsigned short getDestinationX() { return this->getInt16FromRegister(36); }
-    inline unsigned short getDestinationY() { return this->getInt16FromRegister(38); }
-    inline unsigned short getNumberOfDotsX() { return this->getInt16FromRegister(40); }
-    inline unsigned short getNumberOfDotsY() { return this->getInt16FromRegister(42); }
+    inline unsigned short getSourceX() { return this->getInt16FromRegister(32) & 0x01FF; }
+    inline unsigned short getSourceY() { return this->getInt16FromRegister(34) & 0x03FF; }
+    inline unsigned short getDestinationX() { return this->getInt16FromRegister(36) & 0x01FF; }
+    inline unsigned short getDestinationY() { return this->getInt16FromRegister(38) & 0x03FF; }
+    inline unsigned short getNumberOfDotsX() { return this->getInt16FromRegister(40) & 0x01FF; }
+    inline unsigned short getNumberOfDotsY() { return this->getInt16FromRegister(42) & 0x03FF; }
 
     inline void getEdge(int* ex, int* ey, int* dotsPerByte)
     {
@@ -827,7 +828,51 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandHMMM() {}
+    inline void executeCommandHMMM()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        switch (dpb) {
+            case 2:
+                this->ctx.reg[32] &= 0b11111110;
+                this->ctx.reg[36] &= 0b11111110;
+                this->ctx.reg[40] &= 0b11111110;
+                break;
+            case 4:
+                this->ctx.reg[32] &= 0b11111100;
+                this->ctx.reg[36] &= 0b11111100;
+                this->ctx.reg[40] &= 0b11111100;
+                break;
+        }
+        int sx = this->getSourceX();
+        int sy = this->getSourceY();
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        int nx = this->getNumberOfDotsX();
+        int ny = this->getNumberOfDotsY();
+        int baseX = this->ctx.reg[45] & 0b000000100 ? sx - nx : sx;
+        while (baseX < 0) baseX += ex;
+        int size = nx / dpb;
+        if (ex - dx < size) size = ex - dx;
+        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
+        while (ny--) {
+            memmove(&this->ctx.ram[this->getDestinationAddr(dx, dy, 0, 0)], &this->ctx.ram[this->getDestinationAddr(baseX, sy, 0, 0)], size);
+            if (this->ctx.reg[45] & 0b000001000) {
+                dy--;
+                sy--;
+                if (dy < 0) dy += ey;
+                if (sy < 0) sy += ey;
+            } else {
+                dy++;
+                sy++;
+                if (ey <= dy) dy -= ey;
+                if (ey <= sy) sy -= ey;
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
     inline void executeCommandHMMV() {}
     inline void executeCommandLMMC(int lo) {}
     inline void executeCommandLMCM(int lo) {}
