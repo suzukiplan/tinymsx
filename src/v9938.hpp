@@ -650,13 +650,13 @@ class V9938
                 case 0b1110: this->executeCommandYMMM(); break;
                 case 0b1101: this->executeCommandHMMM(); break;
                 case 0b1100: this->executeCommandHMMV(); break;
-                case 0b1011: this->executeCommandLMMC(); break;
-                case 0b1010: this->executeCommandLMCM(); break;
-                case 0b1001: this->executeCommandLMMM(); break;
-                case 0b1000: this->executeCommandLMMV(); break;
-                case 0b0111: this->executeCommandLINE(); break;
+                case 0b1011: this->executeCommandLMMC(lo); break;
+                case 0b1010: this->executeCommandLMCM(lo); break;
+                case 0b1001: this->executeCommandLMMM(lo); break;
+                case 0b1000: this->executeCommandLMMV(lo); break;
+                case 0b0111: this->executeCommandLINE(lo); break;
                 case 0b0110: this->executeCommandSRCH(); break;
-                case 0b0101: this->executeCommandPSET(); break;
+                case 0b0101: this->executeCommandPSET(lo); break;
                 case 0b0100: this->executeCommandPOINT(); break;
             }
         } else {
@@ -668,13 +668,13 @@ class V9938
     inline void executeCommandYMMM() {}
     inline void executeCommandHMMM() {}
     inline void executeCommandHMMV() {}
-    inline void executeCommandLMMC() {}
-    inline void executeCommandLMCM() {}
-    inline void executeCommandLMMM() {}
-    inline void executeCommandLMMV() {}
-    inline void executeCommandLINE() {}
+    inline void executeCommandLMMC(int lo) {}
+    inline void executeCommandLMCM(int lo) {}
+    inline void executeCommandLMMM(int lo) {}
+    inline void executeCommandLMMV(int lo) {}
+    inline void executeCommandLINE(int lo) {}
     inline void executeCommandSRCH() {}
-    inline void executeCommandPSET() {}
+    inline void executeCommandPSET(int lo) {}
     inline void executeCommandPOINT() {}
 };
 
