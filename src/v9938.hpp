@@ -664,6 +664,18 @@ class V9938
         }
     }
 
+    inline unsigned char logicalOperation(int lo, unsigned char dc, unsigned char sc) {
+        if ((lo & 0b1000) && sc == 0) return dc;
+        switch (lo & 0b0111) {
+            case 0b000: return sc;
+            case 0b001: return dc & sc;
+            case 0b010: return dc | sc;
+            case 0b011: return dc ^ sc;
+            case 0b100: return ~sc;
+            default: return 0;
+        }
+    }
+
     inline void executeCommandHMMC() {}
     inline void executeCommandYMMM() {}
     inline void executeCommandHMMM() {}
