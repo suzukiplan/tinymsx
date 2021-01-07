@@ -307,6 +307,9 @@ class V9938
         if (!previousInterrupt && this->isEnabledInterrupt0() && this->ctx.stat[0] & 0x80) {
             this->detectInterrupt(this->arg, 0);
         }
+        if (46 == rn) {
+            this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
+        }
 #ifdef DEBUG
         int currentMode = 0;
         if (ctx.reg[1] & 0b00010000) currentMode |= 1; // Mode 1
@@ -637,6 +640,42 @@ class V9938
     {
         // TODO
     }
+
+    inline void executeCommand(int cm, int lo)
+    {
+        if (cm) {
+            if (this->ctx.stat[2] & 0b01) return; // already executing
+            switch (cm) {
+                case 0b1111: this->executeCommandHMMC(); break;
+                case 0b1110: this->executeCommandYMMM(); break;
+                case 0b1101: this->executeCommandHMMM(); break;
+                case 0b1100: this->executeCommandHMMV(); break;
+                case 0b1011: this->executeCommandLMMC(); break;
+                case 0b1010: this->executeCommandLMCM(); break;
+                case 0b1001: this->executeCommandLMMM(); break;
+                case 0b1000: this->executeCommandLMMV(); break;
+                case 0b0111: this->executeCommandLINE(); break;
+                case 0b0110: this->executeCommandSRCH(); break;
+                case 0b0101: this->executeCommandPSET(); break;
+                case 0b0100: this->executeCommandPOINT(); break;
+            }
+        } else {
+            this->ctx.stat[2] &= 0b11111110;
+        }
+    }
+
+    inline void executeCommandHMMC() {}
+    inline void executeCommandYMMM() {}
+    inline void executeCommandHMMM() {}
+    inline void executeCommandHMMV() {}
+    inline void executeCommandLMMC() {}
+    inline void executeCommandLMCM() {}
+    inline void executeCommandLMMM() {}
+    inline void executeCommandLMMV() {}
+    inline void executeCommandLINE() {}
+    inline void executeCommandSRCH() {}
+    inline void executeCommandPSET() {}
+    inline void executeCommandPOINT() {}
 };
 
 #endif // INCLUDE_V9938_HPP
