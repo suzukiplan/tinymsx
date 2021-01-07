@@ -672,7 +672,7 @@ class V9938
             case 0b010: return dc | sc;
             case 0b011: return dc ^ sc;
             case 0b100: return ~sc;
-            default: return 0;
+            default: return dc;
         }
     }
 
