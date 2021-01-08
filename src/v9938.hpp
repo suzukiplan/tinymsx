@@ -155,6 +155,11 @@ class V9938
             case 0: this->ctx.stat[sn] &= 0b01011111; break;
             case 1: this->ctx.stat[sn] &= 0b11111110; break;
             case 2: result |= 0b10001100; break;
+            case 7:
+                if (this->ctx.command == 0b1010) {
+                    result = executeCommandLMCM();
+                }
+                break;
         }
         this->ctx.latch = 0;
         return result;
@@ -660,7 +665,7 @@ class V9938
                 case 0b1101: this->executeCommandHMMM(); break;
                 case 0b1100: this->executeCommandHMMV(); break;
                 case 0b1011: this->executeCommandLMMC(); break;
-                case 0b1010: this->executeCommandLMCM(lo); break;
+                case 0b1010: break;
                 case 0b1001: this->executeCommandLMMM(lo); break;
                 case 0b1000: this->executeCommandLMMV(lo); break;
                 case 0b0111: this->executeCommandLINE(lo); break;
@@ -988,7 +993,44 @@ class V9938
         }
     }
 
-    inline void executeCommandLMCM(int lo) {}
+    inline unsigned char executeCommandLMCM()
+    {
+        int sx = this->getSourceX();
+        int sy = this->getSourceY();
+        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
+        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
+        int addr = this->getDestinationAddr(sx, sy, ox, oy);
+        unsigned char result = 0;
+        switch (this->getCommandAddX()) {
+            case 1: result = this->ctx.ram[addr]; break;
+            case 2: // G4, G6 (4bit)
+                if ((sx + ox) & 1) {
+                    result = this->ctx.ram[addr] & 0x0F;
+                } else {
+                    result = (this->ctx.ram[addr] & 0xF0) >> 4;
+                }
+                break;
+            case 4: // G5 (2bit)
+                switch ((sx + ox) & 3) {
+                    case 0: result = (this->ctx.ram[addr] & 0b11000000) >> 6; break;
+                    case 1: result = (this->ctx.ram[addr] & 0b00110000) >> 4; break;
+                    case 2: result = (this->ctx.ram[addr] & 0b00001100) >> 2; break;
+                    case 3: result = this->ctx.ram[addr] & 0b00000011; break;
+                }
+                break;
+        }
+        this->ctx.commandX++;
+        if (this->getNumberOfDotsX() == this->ctx.commandX) {
+            this->ctx.commandX = 0;
+            this->ctx.commandY++;
+            if (this->getNumberOfDotsY() == this->ctx.commandY) {
+                this->ctx.command = 0;
+                this->ctx.stat[2] &= 0b11111110;
+            }
+        }
+        return result;
+    }
+
     inline void executeCommandLMMM(int lo) {}
     inline void executeCommandLMMV(int lo) {}
     inline void executeCommandLINE(int lo) {}
