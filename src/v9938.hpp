@@ -667,6 +667,7 @@ class V9938
             }
         } else {
             this->ctx.stat[2] &= 0b11111110;
+            this->ctx.command = 0;
         }
     }
 
@@ -868,7 +869,47 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandHMMV() {}
+    inline void executeCommandHMMV()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        switch (this->getCommandAddX()) {
+            case 2:
+                this->ctx.reg[36] &= 0b11111110;
+                this->ctx.reg[40] &= 0b11111110;
+                break;
+            case 4:
+                this->ctx.reg[36] &= 0b11111100;
+                this->ctx.reg[40] &= 0b11111100;
+                break;
+        }
+        int sy = this->getSourceY();
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        int nx = this->getNumberOfDotsX();
+        int ny = this->getNumberOfDotsY();
+        int baseX = this->ctx.reg[45] & 0b000000100 ? dx - nx : dx;
+        int size = nx;
+        size /= dpb;
+        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
+        while (ny--) {
+            memset(&this->ctx.ram[this->getDestinationAddr(baseX, dy, 0, 0)], this->ctx.reg[44], size);
+            if (this->ctx.reg[45] & 0b000001000) {
+                dy--;
+                sy--;
+                if (dy < 0) dy += ey;
+                if (sy < 0) sy += ey;
+            } else {
+                dy++;
+                sy++;
+                if (ey <= dy) dy -= ey;
+                if (ey <= sy) sy -= ey;
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
     inline void executeCommandLMMC(int lo) {}
     inline void executeCommandLMCM(int lo) {}
     inline void executeCommandLMMM(int lo) {}
