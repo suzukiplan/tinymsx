@@ -666,7 +666,7 @@ class V9938
                 case 0b1100: this->executeCommandHMMV(); break;
                 case 0b1011: this->executeCommandLMMC(); break;
                 case 0b1010: break;
-                case 0b1001: this->executeCommandLMMM(lo); break;
+                case 0b1001: this->executeCommandLMMM(); break;
                 case 0b1000: this->executeCommandLMMV(lo); break;
                 case 0b0111: this->executeCommandLINE(lo); break;
                 case 0b0110: this->executeCommandSRCH(); break;
@@ -1031,7 +1031,97 @@ class V9938
         return result;
     }
 
-    inline void executeCommandLMMM(int lo) {}
+    inline void executeCommandLMMM()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        int sx = this->getSourceX();
+        int sy = this->getSourceY();
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        const int nxc = this->getNumberOfDotsX();
+        int ny = this->getNumberOfDotsY();
+        if (ny && nxc) {
+            // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
+            int oy = 0;
+            int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
+            int diy = this->ctx.reg[45] & 0b000001000 ? -1 : 1;
+            while (ny--) {
+                int nx = nxc;
+                int ox = 0;
+                while (nx--) {
+                    int sa = this->getDestinationAddr(sx, sy, ox, oy);
+                    int da = this->getDestinationAddr(dx, dy, ox, oy);
+                    unsigned char sc = this->ctx.ram[sa];
+                    unsigned char dc = this->ctx.ram[da];
+                    switch (dpb) {
+                        case 1: this->ctx.ram[da] = this->logicalOperation(this->ctx.commandL, dc, sc); break;
+                        case 2:
+                            if ((sx + ox) & 1) {
+                                sc = (sc & 0b11110000) >> 4;
+                            } else {
+                                sc = sc & 0b00001111;
+                            }
+                            if ((dx + ox) & 1) {
+                                dc = (dc & 0b11110000) >> 4;
+                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                dc <<= 4;
+                                this->ctx.ram[da] &= 0b00001111;
+                                this->ctx.ram[da] |= dc;
+                            } else {
+                                dc = dc & 0b00001111;
+                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                this->ctx.ram[da] &= 0b11110000;
+                                this->ctx.ram[da] |= dc;
+                            }
+                            break;
+                        case 4:
+                            switch ((sx + ox) & 3) {
+                                case 0: sc = (sc & 0b11000000) >> 6; break;
+                                case 1: sc = (sc & 0b00110000) >> 4; break;
+                                case 2: sc = (sc & 0b00001100) >> 2; break;
+                                case 3: sc &= 0b00000011; break;
+                            }
+                            switch ((dx + ox) & 3) {
+                                case 0:
+                                    dc = (dc & 0b11000000) >> 6;
+                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                    dc <<= 6;
+                                    this->ctx.ram[da] &= 0b00111111;
+                                    this->ctx.ram[da] |= dc;
+                                    break;
+                                case 1:
+                                    dc = (dc & 0b00110000) >> 4;
+                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                    dc <<= 4;
+                                    this->ctx.ram[da] &= 0b11001111;
+                                    this->ctx.ram[da] |= dc;
+                                    break;
+                                case 2:
+                                    dc = (dc & 0b00001100) >> 2;
+                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                    dc <<= 2;
+                                    this->ctx.ram[da] &= 0b11110011;
+                                    this->ctx.ram[da] |= dc;
+                                    break;
+                                case 3:
+                                    dc = dc & 0b00000011;
+                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                                    this->ctx.ram[da] &= 0b11111100;
+                                    this->ctx.ram[da] |= dc;
+                                    break;
+                            }
+                            break;
+                    }
+                    ox += dix;
+                }
+                oy += diy;
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
     inline void executeCommandLMMV(int lo) {}
     inline void executeCommandLINE(int lo) {}
     inline void executeCommandSRCH() {}
