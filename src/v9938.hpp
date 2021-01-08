@@ -55,6 +55,7 @@ class V9938
         unsigned char latch;
         unsigned char readBuffer;
         unsigned char command;
+        unsigned char commandL;
         unsigned short commandX;
         unsigned short commandY;
     } ctx;
@@ -308,6 +309,7 @@ class V9938
         if (44 == rn && this->ctx.command) {
             switch (this->ctx.commandX) {
                 case 0b1111: this->executeCommandHMMC(); break;
+                case 0b1011: this->executeCommandLMMC(); break;
             }
         } else if (46 == rn) {
             this->executeCommand((value & 0xF0) >> 4, value & 0x0F);
@@ -648,6 +650,7 @@ class V9938
         if (cm) {
             if (this->ctx.stat[2] & 0b00000001) return; // already executing
             this->ctx.command = cm;
+            this->ctx.commandL = lo;
             this->ctx.commandX = 0;
             this->ctx.commandY = 0;
             this->ctx.stat[2] |= 0b00000001;
@@ -656,7 +659,7 @@ class V9938
                 case 0b1110: this->executeCommandYMMM(); break;
                 case 0b1101: this->executeCommandHMMM(); break;
                 case 0b1100: this->executeCommandHMMV(); break;
-                case 0b1011: this->executeCommandLMMC(lo); break;
+                case 0b1011: this->executeCommandLMMC(); break;
                 case 0b1010: this->executeCommandLMCM(lo); break;
                 case 0b1001: this->executeCommandLMMM(lo); break;
                 case 0b1000: this->executeCommandLMMV(lo); break;
@@ -910,7 +913,81 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandLMMC(int lo) {}
+    inline void executeCommandLMMC()
+    {
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        int ox = this->ctx.reg[45] & 0b000000100 ? -this->ctx.commandX : this->ctx.commandX;
+        int oy = this->ctx.reg[45] & 0b000001000 ? -this->ctx.commandY : this->ctx.commandY;
+        // NOTE: in fact, the transfer is not completed immediatly, but it is completed immediatly.
+        int addr = this->getDestinationAddr(dx, dy, ox, oy);
+        switch (this->getCommandAddX()) {
+            case 1: // G7 (8bit)
+                this->ctx.ram[addr] = this->logicalOperation(this->ctx.commandL, this->ctx.ram[addr], this->ctx.reg[44]);
+                break;
+            case 2: // G4, G6 (4bit)
+                if ((dx + ox) & 1) {
+                    // low 4bit
+                    unsigned char dc = this->ctx.ram[addr] & 0x0F;
+                    dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0x0F;
+                    this->ctx.ram[addr] &= 0xF0;
+                    this->ctx.ram[addr] |= dc;
+                } else {
+                    // high 4bit
+                    unsigned char dc = (this->ctx.ram[addr] & 0xF0) >> 4;
+                    dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]);
+                    dc <<= 4;
+                    this->ctx.ram[addr] &= 0x0F;
+                    this->ctx.ram[addr] |= dc;
+                }
+                break;
+            case 4: // G5 (2bit)
+                switch ((dx + ox) & 3) {
+                    case 0: { // xx------
+                        unsigned char dc = (this->ctx.ram[addr] & 0b11000000) >> 6;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
+                        dc <<= 6;
+                        this->ctx.ram[addr] &= 0b00111111;
+                        this->ctx.ram[addr] |= dc;
+                        break;
+                    }
+                    case 1: { // --xx----
+                        unsigned char dc = (this->ctx.ram[addr] & 0b00110000) >> 4;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
+                        dc <<= 4;
+                        this->ctx.ram[addr] &= 0b11001111;
+                        this->ctx.ram[addr] |= dc;
+                        break;
+                    }
+                    case 2: { // ----xx--
+                        unsigned char dc = (this->ctx.ram[addr] & 0b00001100) >> 2;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
+                        dc <<= 2;
+                        this->ctx.ram[addr] &= 0b11110011;
+                        this->ctx.ram[addr] |= dc;
+                        break;
+                    }
+                    case 3: { // ------xx
+                        unsigned char dc = this->ctx.ram[addr] & 0b00000011;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, this->ctx.reg[44]) & 0b00000011;
+                        this->ctx.ram[addr] &= 0b11111100;
+                        this->ctx.ram[addr] |= dc;
+                        break;
+                    }
+                }
+                break;
+        }
+        this->ctx.commandX++;
+        if (this->getNumberOfDotsX() == this->ctx.commandX) {
+            this->ctx.commandX = 0;
+            this->ctx.commandY++;
+            if (this->getNumberOfDotsY() == this->ctx.commandY) {
+                this->ctx.command = 0;
+                this->ctx.stat[2] &= 0b11111110;
+            }
+        }
+    }
+
     inline void executeCommandLMCM(int lo) {}
     inline void executeCommandLMMM(int lo) {}
     inline void executeCommandLMMV(int lo) {}
