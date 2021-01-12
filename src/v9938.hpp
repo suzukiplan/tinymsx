@@ -1139,57 +1139,7 @@ class V9938
                 int nx = nxc;
                 int ox = 0;
                 while (nx--) {
-                    int da = this->getDestinationAddr(dx, dy, ox, oy);
-                    unsigned char sc = this->ctx.reg[44];
-                    unsigned char dc = this->ctx.ram[da];
-                    switch (dpb) {
-                        case 1: this->ctx.ram[da] = this->logicalOperation(this->ctx.commandL, dc, sc); break;
-                        case 2:
-                            if ((dx + ox) & 1) {
-                                dc = (dc & 0b11110000) >> 4;
-                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                dc <<= 4;
-                                this->ctx.ram[da] &= 0b00001111;
-                                this->ctx.ram[da] |= dc;
-                            } else {
-                                dc = dc & 0b00001111;
-                                dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                this->ctx.ram[da] &= 0b11110000;
-                                this->ctx.ram[da] |= dc;
-                            }
-                            break;
-                        case 4:
-                            switch ((dx + ox) & 3) {
-                                case 0:
-                                    dc = (dc & 0b11000000) >> 6;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 6;
-                                    this->ctx.ram[da] &= 0b00111111;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 1:
-                                    dc = (dc & 0b00110000) >> 4;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 4;
-                                    this->ctx.ram[da] &= 0b11001111;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 2:
-                                    dc = (dc & 0b00001100) >> 2;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    dc <<= 2;
-                                    this->ctx.ram[da] &= 0b11110011;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                                case 3:
-                                    dc = dc & 0b00000011;
-                                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
-                                    this->ctx.ram[da] &= 0b11111100;
-                                    this->ctx.ram[da] |= dc;
-                                    break;
-                            }
-                            break;
-                    }
+                    this->drawLogicalPixel(dx, dy, ox, oy, dpb);
                     ox += dix;
                 }
                 oy += diy;
@@ -1199,7 +1149,118 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandLINE() {}
+    inline void executeCommandLINE()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        int x1, y1, x2, y2;
+        int nx = this->getNumberOfDotsX();
+        int ny = this->getNumberOfDotsY();
+        bool isLongX = 0 == (this->ctx.reg[45] & 0b00000001) ? true : false;
+        {
+            int dx = this->getDestinationX();
+            int dy = this->getDestinationY();
+            int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
+            int diy = this->ctx.reg[45] & 0b000001000 ? -1 : 1;
+            if (0 < dix) {
+                x1 = dx;
+                x2 = dx + nx;
+            } else {
+                x1 = dx - nx;
+                x2 = dx;
+            }
+            if (0 < diy) {
+                y1 = dy;
+                y2 = dy + ny;
+            } else {
+                y1 = dy - ny;
+                y2 = dy;
+            }
+        }
+        int dx, dy, x, y, e, dx2, dy2;
+        dx = x2 - x1;
+        dy = y2 - y1;
+        dx2 = dx << 1;
+        dy2 = dy << 1;
+        // NOTE: in fact, YMMM command is not completed immediatly, but it is completed immediatly.
+        if (isLongX) {
+            for (x = 0, e = 0, y = 0; x <= dx; x++) {
+                this->drawLogicalPixel(x1, y1, x, y, dpb);
+                e += dy2;
+                if (dx <= e) {
+                    y++;
+                    e -= dx2;
+                }
+            }
+        } else {
+            for (x = 0, e = 0, y = 0; y <= dy; y++) {
+                this->drawLogicalPixel(x1, y1, x, y, dpb);
+                e += dx2;
+                if (dy <= e) {
+                    x++;
+                    e -= dy2;
+                }
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
+    inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
+    {
+        int da = this->getDestinationAddr(x, y, ox, oy);
+        unsigned char sc = this->ctx.reg[44];
+        unsigned char dc = this->ctx.ram[da];
+        switch (dpb) {
+            case 1: this->ctx.ram[da] = this->logicalOperation(this->ctx.commandL, dc, sc); break;
+            case 2:
+                if ((x + ox) & 1) {
+                    dc = (dc & 0b11110000) >> 4;
+                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                    dc <<= 4;
+                    this->ctx.ram[da] &= 0b00001111;
+                    this->ctx.ram[da] |= dc;
+                } else {
+                    dc = dc & 0b00001111;
+                    dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                    this->ctx.ram[da] &= 0b11110000;
+                    this->ctx.ram[da] |= dc;
+                }
+                break;
+            case 4:
+                switch ((x + ox) & 3) {
+                    case 0:
+                        dc = (dc & 0b11000000) >> 6;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                        dc <<= 6;
+                        this->ctx.ram[da] &= 0b00111111;
+                        this->ctx.ram[da] |= dc;
+                        break;
+                    case 1:
+                        dc = (dc & 0b00110000) >> 4;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                        dc <<= 4;
+                        this->ctx.ram[da] &= 0b11001111;
+                        this->ctx.ram[da] |= dc;
+                        break;
+                    case 2:
+                        dc = (dc & 0b00001100) >> 2;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                        dc <<= 2;
+                        this->ctx.ram[da] &= 0b11110011;
+                        this->ctx.ram[da] |= dc;
+                        break;
+                    case 3:
+                        dc = dc & 0b00000011;
+                        dc = this->logicalOperation(this->ctx.commandL, dc, sc);
+                        this->ctx.ram[da] &= 0b11111100;
+                        this->ctx.ram[da] |= dc;
+                        break;
+                }
+                break;
+        }
+    }
+
     inline void executeCommandSRCH() {}
     inline void executeCommandPSET() {}
     inline void executeCommandPOINT() {}
