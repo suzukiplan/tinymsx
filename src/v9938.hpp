@@ -1246,7 +1246,17 @@ class V9938
         this->ctx.stat[2] &= 0b11101110;
     }
 
-    inline void executeCommandPSET() {}
+    inline void executeCommandPSET()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        int dx = this->getDestinationX();
+        int dy = this->getDestinationY();
+        this->drawLogicalPixel(dx, dy, 0, 0, dpb);
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
+
     inline void executeCommandPOINT() {}
 
     inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
