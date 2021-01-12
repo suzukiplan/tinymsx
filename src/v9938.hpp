@@ -1257,7 +1257,16 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
-    inline void executeCommandPOINT() {}
+    inline void executeCommandPOINT()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        int sx = this->getSourceX();
+        int sy = this->getSourceY();
+        this->ctx.stat[7] = this->getLogicalPixel(sx, sy, 0, 0, dpb);
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11111110;
+    }
 
     inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
     {
