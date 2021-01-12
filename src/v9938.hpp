@@ -1206,6 +1206,49 @@ class V9938
         this->ctx.stat[2] &= 0b11111110;
     }
 
+    inline void executeCommandSRCH()
+    {
+        int ex, ey, dpb;
+        getEdge(&ex, &ey, &dpb);
+        int sx = this->getSourceX();
+        int sy = this->getSourceY();
+        unsigned char sc = this->ctx.reg[44];
+        switch (dpb) {
+            case 2: sc &= 0b00001111; break;
+            case 4: sc &= 0b00000011; break;
+        }
+        int dix = this->ctx.reg[45] & 0b000000100 ? -1 : 1;
+        bool eq = this->ctx.reg[45] & 0b000000010 ? true : false;
+        for (int ox = 0; 0 <= sx + ox && sx + ox < ex; ox += dix) {
+            if (sc == this->getLogicalPixel(sx, sy, ox, 0, dpb)) {
+                if (!eq) {
+                    // found
+                    this->ctx.command = 0;
+                    this->ctx.stat[2] &= 0b11111110;
+                    this->ctx.stat[2] |= 0b00010000;
+                    this->ctx.stat[8] = (sx + ox) & 0xFF;
+                    this->ctx.stat[9] = ((sx + ox) & 0xFF00) >> 8;
+                    return;
+                }
+            } else {
+                if (eq) {
+                    // found
+                    this->ctx.command = 0;
+                    this->ctx.stat[2] &= 0b11111110;
+                    this->ctx.stat[2] |= 0b00010000;
+                    this->ctx.stat[8] = (sx + ox) & 0xFF;
+                    this->ctx.stat[9] = ((sx + ox) & 0xFF00) >> 8;
+                    return;
+                }
+            }
+        }
+        this->ctx.command = 0;
+        this->ctx.stat[2] &= 0b11101110;
+    }
+
+    inline void executeCommandPSET() {}
+    inline void executeCommandPOINT() {}
+
     inline void drawLogicalPixel(int x, int y, int ox, int oy, int dpb)
     {
         int da = this->getDestinationAddr(x, y, ox, oy);
@@ -1261,9 +1304,30 @@ class V9938
         }
     }
 
-    inline void executeCommandSRCH() {}
-    inline void executeCommandPSET() {}
-    inline void executeCommandPOINT() {}
-};
+    inline unsigned char getLogicalPixel(int x, int y, int ox, int oy, int dpb)
+    {
+        int da = this->getDestinationAddr(x, y, ox, oy);
+        unsigned char dc = this->ctx.ram[da];
+        switch (dpb) {
+            case 1: return dc;
+            case 2:
+                if ((x + ox) & 1) {
+                    dc = (dc & 0b11110000) >> 4;
+                } else {
+                    dc = dc & 0b00001111;
+                }
+                return dc;
+            case 4:
+                switch ((x + ox) & 3) {
+                    case 0: return (dc & 0b11000000) >> 6;
+                    case 1: return (dc & 0b00110000) >> 4;
+                    case 2: return (dc & 0b00001100) >> 2;
+                    case 3: return dc & 0b00000011;
+                }
+                return 0;
+        }
+        return 0;
+    }
+ };
 
 #endif // INCLUDE_V9938_HPP
