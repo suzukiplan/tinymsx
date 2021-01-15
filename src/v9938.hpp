@@ -109,6 +109,8 @@ class V9938
     inline bool isEnabledInterrupt1() { return ctx.reg[0] & 0b00010000 ? true : false; }
     inline bool isEnabledInterrupt2() { return ctx.reg[0] & 0b00100000 ? true : false; }
     inline unsigned short getBackdropColor() { return palette[ctx.reg[7] & 0b00001111]; }
+    inline bool isEnabledMouse() { return ctx.reg[8] & 0b10000000 ? true : false; }
+    inline bool isEnabledLightPen() { return ctx.reg[8] & 0b01000000 ? true : false; }
 
     inline void tick()
     {
@@ -155,6 +157,12 @@ class V9938
             case 0: this->ctx.stat[sn] &= 0b01011111; break;
             case 1: this->ctx.stat[sn] &= 0b11111110; break;
             case 2: result |= 0b10001100; break;
+            case 5:
+                this->ctx.stat[3] = 0;
+                this->ctx.stat[4] = 0;
+                this->ctx.stat[5] = 0;
+                this->ctx.stat[6] = 0;
+                break;
             case 7:
                 if (this->ctx.command == 0b1010) {
                     result = executeCommandLMCM();
@@ -645,6 +653,19 @@ class V9938
         }
     }
 
+    inline void setCollision(int x, int y)
+    {
+        this->ctx.stat[0] |= 0b00100000;
+        if (!this->isEnabledMouse() && !this->isEnabledLightPen()) {
+            x += 12;
+            y += 8;
+            this->ctx.stat[3] = x & 0xFF;
+            this->ctx.stat[4] = (x & 0x0100) >> 8;
+            this->ctx.stat[5] = y & 0xFF;
+            this->ctx.stat[6] = (y & 0x0300) >> 8;
+        }
+    }
+
     inline void renderSpritesMode2(int lineNumber)
     {
         static const unsigned char bit[8] = {
@@ -701,7 +722,7 @@ class V9938
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -721,7 +742,7 @@ class V9938
                         cur += 16;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -761,7 +782,7 @@ class V9938
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
@@ -803,7 +824,7 @@ class V9938
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -823,7 +844,7 @@ class V9938
                         cur += 16;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
@@ -863,7 +884,7 @@ class V9938
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x] && !ic) {
-                                this->ctx.stat[0] |= 0b00100000;
+                                this->setCollision(x, y);
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
