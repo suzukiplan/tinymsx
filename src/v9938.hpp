@@ -647,7 +647,193 @@ class V9938
 
     inline void renderSpritesMode2(int lineNumber)
     {
-        // TODO
+        static const unsigned char bit[8] = {
+            0b10000000,
+            0b01000000,
+            0b00100000,
+            0b00010000,
+            0b00001000,
+            0b00000100,
+            0b00000010,
+            0b00000001};
+        bool si = this->ctx.reg[1] & 0b00000010 ? true : false;
+        bool mag = this->ctx.reg[1] & 0b00000001 ? true : false;
+        int sa = this->ctx.reg[10];
+        sa &= 0b00000011;
+        sa <<= 8;
+        sa |= this->ctx.reg[5];
+        sa &= 0b11111000;
+        sa |= 0b00000100;
+        sa <<= 7;
+        int sg = this->ctx.reg[6] << 11;
+        int sn = 0;
+        unsigned char dlog[256];
+        unsigned char wlog[256];
+        memset(dlog, 0, sizeof(dlog));
+        memset(wlog, 0, sizeof(wlog));
+        for (int i = 0; i < 32; i++) {
+            int cur = sa + i * 4;
+            unsigned char y = this->ctx.ram[cur++];
+            if (216 == y) break;
+            unsigned char x = this->ctx.ram[cur++];
+            unsigned char ptn = this->ctx.ram[cur++];
+            y++;
+            if (mag) {
+                if (si) {
+                    // 16x16 x 2
+                    if (y <= lineNumber && lineNumber < y + 32) {
+                        sn++;
+                        if (9 <= sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            break;
+                        } else {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        int pixelLine = lineNumber - y;
+                        cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
+                        int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
+                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
+                        int col = this->ctx.ram[ct] & 0x0F;
+                        int dcur = lineNumber * 256;
+                        for (int j = 0; j < 16; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                        cur += 16;
+                        for (int j = 0; j < 16; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // 8x8 x 2
+                    if (y <= lineNumber && lineNumber < y + 16) {
+                        sn++;
+                        if (9 <= sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            break;
+                        } else {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        int pixelLine = lineNumber - y;
+                        cur = sg + ptn * 8 + lineNumber % 8;
+                        int ct = sg + 0x80 + ptn * 16 + pixelLine % 16 / 2;
+                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
+                        int col = this->ctx.ram[ct] & 0x0F;
+                        int dcur = lineNumber * 256;
+                        for (int j = 0; j < 16; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (si) {
+                    // 16x16 x 1
+                    if (y <= lineNumber && lineNumber < y + 16) {
+                        sn++;
+                        if (9 <= sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            break;
+                        } else {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        int pixelLine = lineNumber - y;
+                        cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
+                        int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
+                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
+                        int col = this->ctx.ram[ct] & 0x0F;
+                        int dcur = lineNumber * 256;
+                        for (int j = 0; j < 8; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                        cur += 16;
+                        for (int j = 0; j < 8; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // 8x8 x 1
+                    if (y <= lineNumber && lineNumber < y + 8) {
+                        sn++;
+                        if (9 <= sn) {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= 0b01000000 | i;
+                            break;
+                        } else {
+                            this->ctx.stat[0] &= 0b11100000;
+                            this->ctx.stat[0] |= i;
+                        }
+                        int pixelLine = lineNumber - y;
+                        cur = sg + ptn * 8 + lineNumber % 8;
+                        int ct = sg + 0x80 + ptn * 16 + pixelLine % 8;
+                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
+                        int col = this->ctx.ram[ct] & 0x0F;
+                        int dcur = lineNumber * 256;
+                        for (int j = 0; j < 8; j++, x++) {
+                            if (wlog[x]) {
+                                this->ctx.stat[0] |= 0b00100000;
+                            }
+                            if (0 == dlog[x]) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     inline void executeCommand(int cm, int lo)
