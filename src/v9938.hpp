@@ -694,11 +694,12 @@ class V9938
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                         int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
-                        int col = this->ctx.ram[ct] & 0x0F;
+                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
+                        int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
@@ -711,7 +712,7 @@ class V9938
                         }
                         cur += 16;
                         for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
@@ -738,11 +739,12 @@ class V9938
                         int pixelLine = lineNumber - y;
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int ct = sg + 0x80 + ptn * 16 + pixelLine % 16 / 2;
-                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
-                        int col = this->ctx.ram[ct] & 0x0F;
+                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
+                        int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
@@ -771,11 +773,12 @@ class V9938
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                         int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
-                        int col = this->ctx.ram[ct] & 0x0F;
+                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
+                        int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
@@ -788,7 +791,7 @@ class V9938
                         }
                         cur += 16;
                         for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
@@ -815,11 +818,12 @@ class V9938
                         int pixelLine = lineNumber - y;
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int ct = sg + 0x80 + ptn * 16 + pixelLine % 8;
-                        x -= this->ctx.ram[ct] & 0x80 ? 32 : 0;
-                        int col = this->ctx.ram[ct] & 0x0F;
+                        x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
+                        int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
-                            if (wlog[x]) {
+                            if (wlog[x] && !ic) {
                                 this->ctx.stat[0] |= 0b00100000;
                             }
                             if (0 == dlog[x]) {
