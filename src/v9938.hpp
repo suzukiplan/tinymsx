@@ -695,6 +695,7 @@ class V9938
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                         int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
                         int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
@@ -708,6 +709,13 @@ class V9938
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    col |= dlog[x];
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
                             }
                         }
                         cur += 16;
@@ -717,6 +725,13 @@ class V9938
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    col |= dlog[x];
                                     this->display[dcur + x] = this->palette[col];
                                     dlog[x] = col;
                                     wlog[x] = 1;
@@ -740,6 +755,7 @@ class V9938
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int ct = sg + 0x80 + ptn * 16 + pixelLine % 16 / 2;
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
                         int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
@@ -749,6 +765,13 @@ class V9938
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j / 2]) {
+                                    col |= dlog[x];
                                     this->display[dcur + x] = this->palette[col];
                                     dlog[x] = col;
                                     wlog[x] = 1;
@@ -774,6 +797,7 @@ class V9938
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                         int ct = sg + 0x80 + (ptn & 252) * 16 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
                         int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
@@ -787,6 +811,13 @@ class V9938
                                     dlog[x] = col;
                                     wlog[x] = 1;
                                 }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    col |= dlog[x];
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
                             }
                         }
                         cur += 16;
@@ -796,6 +827,13 @@ class V9938
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    col |= dlog[x];
                                     this->display[dcur + x] = this->palette[col];
                                     dlog[x] = col;
                                     wlog[x] = 1;
@@ -819,6 +857,7 @@ class V9938
                         cur = sg + ptn * 8 + lineNumber % 8;
                         int ct = sg + 0x80 + ptn * 16 + pixelLine % 8;
                         x -= this->ctx.ram[ct] & 0b10000000 ? 32 : 0;
+                        bool cc = this->ctx.ram[ct] & 0b01000000 ? true : false;
                         bool ic = this->ctx.ram[ct] & 0b00100000 ? true : false;
                         int col = this->ctx.ram[ct] & 0b00001111;
                         int dcur = lineNumber * 256;
@@ -828,6 +867,13 @@ class V9938
                             }
                             if (0 == dlog[x]) {
                                 if (this->ctx.ram[cur] & bit[j]) {
+                                    this->display[dcur + x] = this->palette[col];
+                                    dlog[x] = col;
+                                    wlog[x] = 1;
+                                }
+                            } else if (cc) {
+                                if (this->ctx.ram[cur] & bit[j]) {
+                                    col |= dlog[x];
                                     this->display[dcur + x] = this->palette[col];
                                     dlog[x] = col;
                                     wlog[x] = 1;
