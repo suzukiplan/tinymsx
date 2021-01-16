@@ -40,6 +40,7 @@ class V9938
   public:
     unsigned short display[256 * 212];
     unsigned short palette[16];
+    unsigned short paletteG7[16];
 
     struct Context {
         int bobo;
@@ -284,6 +285,30 @@ class V9938
                 b = 0;
         }
         this->palette[pn] = r | g | b;
+    }
+
+    inline void updateG7PaletteCache(int pn, unsigned short msxGRB)
+    {
+        unsigned short r = msxGRB & 0b000111000;
+        unsigned short g = msxGRB & 0b111000000;
+        unsigned short b = msxGRB & 0b000000111;
+        switch (this->colorMode) {
+            case 0: // RGB555
+                r <<= 8;
+                g <<= 7;
+                b <<= 2;
+                break;
+            case 1: // RGB565
+                r <<= 9;
+                g <<= 8;
+                b <<= 2;
+                break;
+            default:
+                r = 0;
+                g = 0;
+                b = 0;
+        }
+        this->paletteG7[pn] = r | g | b;
     }
 
     inline void updateAddress()
@@ -1604,6 +1629,6 @@ class V9938
         }
         return 0;
     }
- };
+};
 
 #endif // INCLUDE_V9938_HPP

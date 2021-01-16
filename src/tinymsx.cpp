@@ -41,6 +41,7 @@
 #define STATE_CHUNK_GM2 "G2"
 #define STATE_CHUNK_A08 "A8"
 #define STATE_CHUNK_A8W "AW"
+#define STATE_CHUNK_A8X "AX"
 #define STATE_CHUNK_IO "IO"
 
 static void detectBlank(void* arg) { ((TinyMSX*)arg)->cpu->generateIRQ(0x07); }
@@ -101,6 +102,8 @@ void TinyMSX::reset()
             this->slotASC8.init(this->rom);
         } else if (this->isMSX1_ASC8W()) {
             this->slotASC8W.init(this->rom);
+        } else if (this->isMSX1_ASC8X()) {
+            this->slotASC8X.init(this->rom);
         }
         this->slot_add(0, 0, &this->bios.main[0x0000], true);
         this->slot_add(0, 1, &this->bios.main[0x4000], true);
@@ -512,6 +515,9 @@ const void* TinyMSX::saveState(size_t* size)
     } else if (this->isMSX1_ASC8W()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A8W, sizeof(this->slotASC8W.ctx), &this->slotASC8W.ctx);
+    } else if (this->isMSX1_ASC8X()) {
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
+        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A8X, sizeof(this->slotASC8X.ctx), &this->slotASC8X.ctx);
     }
     ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_IO, sizeof(this->io), &this->io);
     *size = ptr;
@@ -552,6 +558,9 @@ void TinyMSX::loadState(const void* data, size_t size)
         } else if (0 == strncmp(ch, STATE_CHUNK_A8W, 2)) {
             memcpy(&this->slotASC8W.ctx, d, ds);
             this->slotASC8W.reloadBank();
+        } else if (0 == strncmp(ch, STATE_CHUNK_A8X, 2)) {
+            memcpy(&this->slotASC8X.ctx, d, ds);
+            this->slotASC8X.reloadBank();
         } else if (0 == strncmp(ch, STATE_CHUNK_IO, 2)) {
             memcpy(this->io, d, ds);
         } else {
