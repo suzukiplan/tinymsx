@@ -63,12 +63,8 @@ class MsxSlotASC8 : public MsxSlot
             }
         }
         ss += sa;
-        if (this->slots[ps].isReadOnly[ss]) {
-            if (1 == ps && 0x4000 <= addr && addr < 0xC000) {
-                switchBank((addr - 0x4000) / 0x2000, value);
-            }
-            return;
-        }
+        if (1 == ps && 0x6000 <= addr && addr < 0x8000) this->switchBank((addr - 0x6000) / 0x800, value);
+        if (this->slots[ps].isReadOnly[ss]) return;
         if (!this->slots[ps].ptr[ss]) return;
         this->slots[ps].ptr[ss][addr & 0x0FFF] = value;
     }

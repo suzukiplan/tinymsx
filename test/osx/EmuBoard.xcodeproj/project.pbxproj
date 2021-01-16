@@ -24,6 +24,7 @@
 /* Begin PBXFileReference section */
 		1D0D90B8225440FA00FB9699 /* vgsspu_al.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgsspu_al.h; sourceTree = "<group>"; };
 		1D0D90B9225440FB00FB9699 /* vgsspu_al.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = vgsspu_al.c; sourceTree = "<group>"; };
+		7492488525B1DCD800B1EBC9 /* msxslot_asc8x.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msxslot_asc8x.hpp; path = ../../../../src/msxslot_asc8x.hpp; sourceTree = "<group>"; };
 		74B4A9F92595F0F400F60406 /* tinymsx_def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tinymsx_def.h; path = ../../../../src/tinymsx_def.h; sourceTree = "<group>"; };
 		74B4A9FA2595F0F400F60406 /* tinymsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tinymsx.cpp; path = ../../../../src/tinymsx.cpp; sourceTree = "<group>"; };
 		74B4A9FB2595F0F400F60406 /* ay8910.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = ay8910.hpp; path = ../../../../src/ay8910.hpp; sourceTree = "<group>"; };
@@ -84,6 +85,7 @@
 				74B4A9FF2595F0F400F60406 /* msxslot.hpp */,
 				74B4AA10259A224500F60406 /* msxslot_asc8.hpp */,
 				74B4AA12259A306F00F60406 /* msxslot_asc8w.hpp */,
+				7492488525B1DCD800B1EBC9 /* msxslot_asc8x.hpp */,
 				74B4AA0C2599644D00F60406 /* msxslot_gm2.hpp */,
 				74B4A9FD2595F0F400F60406 /* sn76489.hpp */,
 				74B4A9F92595F0F400F60406 /* tinymsx_def.h */,

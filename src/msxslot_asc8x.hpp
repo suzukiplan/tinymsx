@@ -1,6 +1,6 @@
 
 /**
- * SUZUKI PLAN - TinyMSX - MSX Slot System for ASC8 + SRAM (Wizardry type)
+ * SUZUKI PLAN - TinyMSX - MSX Slot System for ASC8 + SRAM (Xanadu type)
  * -----------------------------------------------------------------------------
  * The MIT License (MIT)
  *
@@ -25,14 +25,14 @@
  * THE SOFTWARE.
  * -----------------------------------------------------------------------------
  */
-#ifndef INCLUDE_MSXSLOT_ASC8W_HPP
-#define INCLUDE_MSXSLOT_ASC8W_HPP
+#ifndef INCLUDE_MSXSLOT_ASC8X_HPP
+#define INCLUDE_MSXSLOT_ASC8X_HPP
 
 #include "msxslot.hpp"
 #include <stdio.h>
 #include <string.h>
 
-class MsxSlotASC8W : public MsxSlot
+class MsxSlotASC8X : public MsxSlot
 {
   public:
     unsigned char* rom;
@@ -79,7 +79,7 @@ class MsxSlotASC8W : public MsxSlot
 
     inline void switchBank(int segNo, unsigned char value)
     {
-        this->ctx.seg[segNo & 0b11] = value;
+        this->ctx.seg[segNo & 0b11] = value & 0b00111111;
         this->ctx.seg[0] = 0;
         this->reloadBank();
     }
@@ -88,7 +88,7 @@ class MsxSlotASC8W : public MsxSlot
     {
         for (int i = 0; i < 8; i++) {
             int seg = this->ctx.seg[i / 2];
-            if (seg & 0x80) {
+            if (seg & 0b00100000) {
                 this->slots[1].isReadOnly[i] = i < 4 ? true : false;
                 this->slots[1].ptr[i] = &this->ctx.sram[i & 1 ? 0x1000 : 0];
             } else {
@@ -100,4 +100,4 @@ class MsxSlotASC8W : public MsxSlot
     }
 };
 
-#endif // INCLUDE_MSXSLOT_ASC8W_HPP
+#endif // INCLUDE_MSXSLOT_ASC8X_HPP
