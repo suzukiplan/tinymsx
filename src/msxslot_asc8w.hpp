@@ -79,9 +79,10 @@ class MsxSlotASC8W : public MsxSlot
 
     inline void switchBank(int segNo, unsigned char value)
     {
-        this->ctx.seg[segNo & 0b11] = value;
-        this->ctx.seg[0] = 0;
-        this->reloadBank();
+        if (this->ctx.seg[segNo & 0b11] != value) {
+            this->ctx.seg[segNo & 0b11] = value;
+            this->reloadBank();
+        }
     }
 
     inline void reloadBank()
