@@ -171,6 +171,7 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
         case TINYMSX_TYPE_MSX1_GameMaster2:
         case TINYMSX_TYPE_MSX1_ASC8:
         case TINYMSX_TYPE_MSX1_ASC8W:
+        case TINYMSX_TYPE_MSX1_ASC8X:
             this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
             this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
@@ -184,7 +185,7 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
             this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0b00000100 : 0;
             this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0b00001000 : 0;
             this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
-            this->pad[1] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+            this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
             this->ay8910.setPads(this->pad[0], this->pad[1]);
             break;
     }
