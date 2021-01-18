@@ -72,7 +72,7 @@ class SN76489
         this->ctx.nx = (this->ctx.r[6] & 0x04) ? 0x12000 : 0x08000;
     }
 
-    inline void execute(short* left, short* right)
+    inline void tick(short* left, short* right)
     {
         for (int i = 0; i < 3; i++) {
             int regidx = i << 1;

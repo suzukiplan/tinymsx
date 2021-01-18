@@ -63,7 +63,16 @@ class MsxSlotASC8 : public MsxSlot
             }
         }
         ss += sa;
-        if (1 == ps && 0x6000 <= addr && addr < 0x8000) this->switchBank((addr - 0x6000) / 0x800, value);
+        if (1 == ps) {
+            switch (addr) {
+                case 0x4000: this->switchBank(0, value); break;
+                case 0x6000: this->switchBank(1, value); break;
+                case 0x8000: this->switchBank(2, value); break;
+                case 0xA000: this->switchBank(3, value); break;
+                default:
+                    if (0x4000 <= addr && addr < 0xC000) printf("INVALID WRITE: $%04X = $%02X\n", addr, value);
+            }
+        }
         if (this->slots[ps].isReadOnly[ss]) return;
         if (!this->slots[ps].ptr[ss]) return;
         this->slots[ps].ptr[ss][addr & 0x0FFF] = value;

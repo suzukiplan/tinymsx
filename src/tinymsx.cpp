@@ -94,7 +94,7 @@ void TinyMSX::reset()
         this->sn76489.reset(CPU_CLOCK, PSG_CLOCK);
         this->ramSize = 0x800;
     } else if (this->isMSX1Family()) {
-        this->ay8910.reset();
+        this->ay8910.reset(27);
         this->slot_reset();
         if (this->isMSX1_GameMaster2()) {
             this->slotGM2.init(this->rom);
@@ -192,6 +192,28 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
     if (this->cpu) {
         this->cpu->execute(0x7FFFFFFF);
     }
+#if 0
+    memset(this->getDisplayBuffer(), 0, 256 * 64 * 2);
+    int pgBase = (this->tms9918.ctx.reg[4] & 0b00000100) << 11;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 32; x++) {
+            int pg = pgBase + (y * 32 + x) * 8; // + 256 * 8;
+            int addr = y * 8 * 256 + x * 8;
+            for (int line = 0; line < 8; line++) {
+                this->getDisplayBuffer()[addr + 0] = this->tms9918.ctx.ram[pg] & 0b10000000 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 1] = this->tms9918.ctx.ram[pg] & 0b01000000 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 2] = this->tms9918.ctx.ram[pg] & 0b00100000 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 3] = this->tms9918.ctx.ram[pg] & 0b00010000 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 4] = this->tms9918.ctx.ram[pg] & 0b00001000 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 5] = this->tms9918.ctx.ram[pg] & 0b00000100 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 6] = this->tms9918.ctx.ram[pg] & 0b00000010 ? 0xFFFF : 0x0000;
+                this->getDisplayBuffer()[addr + 7] = this->tms9918.ctx.ram[pg] & 0b00000001 ? 0xFFFF : 0x0000;
+                addr += 256;
+                pg++;
+            }
+        }
+    }
+#endif
 }
 
 void* TinyMSX::getSoundBuffer(size_t* size)
@@ -317,14 +339,10 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
         }
     } else if (this->isMSX1Family()) {
         switch (port) {
-            case 0x98:
-                return this->tms9918.readData();
-            case 0x99:
-                return this->tms9918.readStatus();
-            case 0xA2:
-                return this->ay8910.read();
-            case 0xA8:
-                return this->slot_readPrimaryStatus();
+            case 0x98: return this->tms9918.readData();
+            case 0x99: return this->tms9918.readStatus();
+            case 0xA2: return this->ay8910.read();
+            case 0xA8: return this->slot_readPrimaryStatus();
             case 0xA9: {
                 // to read the keyboard matrix row specified via the port AAh. (PPI's port B is used)
                 static unsigned char bit[8] = {
@@ -350,12 +368,10 @@ inline unsigned char TinyMSX::inPort(unsigned char port)
                 return ~result;
             }
             case 0xAA: return 0xFF;
-            default:
-                printf("ignore an unknown input port $%02X\n", port);
-                return this->io[port];
+            default: printf("ignore an unknown input port $%02X\n", port);
         }
     }
-    return 0;
+    return this->io[port];
 }
 
 inline void TinyMSX::outPort(unsigned char port, unsigned char value)
@@ -363,51 +379,28 @@ inline void TinyMSX::outPort(unsigned char port, unsigned char value)
     this->io[port] = value;
     if (this->isSG1000()) {
         switch (port) {
-            case 0x7E:
-            case 0x7F:
-                this->sn76489.write(value);
-                break;
-            case 0xBE:
-                this->tms9918.writeData(value);
-                break;
-            case 0xBF:
-                this->tms9918.writeAddress(value);
-                break;
-            case 0xDE: // keyboard port (ignore)
-            case 0xDF: // keyboard port (ignore)
-                break;
-            default:
-                printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
+            case 0x7E: this->sn76489.write(value); break;
+            case 0x7F: this->sn76489.write(value); break;
+            case 0xBE: this->tms9918.writeData(value); break;
+            case 0xBF: this->tms9918.writeAddress(value); break;
+            case 0xDE: break; // keyboard port (ignore)
+            case 0xDF: break; // keyboard port (ignore)
+            default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     } else if (this->isMSX1Family()) {
         switch (port) {
-            case 0x98:
-                this->tms9918.writeData(value);
-                break;
-            case 0x99:
-                this->tms9918.writeAddress(value);
-                break;
-            case 0xA0:
-                this->ay8910.latch(value);
-                break;
-            case 0xA1:
-                this->ay8910.write(value);
-                break;
-            case 0xA8:
-                this->slot_changePrimarySlots(value);
-                break;
-            case 0xAA: // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
-                break;
-            case 0xAB: // to access the ports control register. (Write only)
-                break;
-            case 0xFC:
-            case 0xFD:
-            case 0xFE:
-            case 0xFF:
-                this->slot_setupPage(3 - (port & 0b11), value);
-                break;
-            default:
-                printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
+            case 0x98: this->tms9918.writeData(value); break;
+            case 0x99: this->tms9918.writeAddress(value); break;
+            case 0xA0: this->ay8910.latch(value); break;
+            case 0xA1: this->ay8910.write(value); break;
+            case 0xA8: this->slot_changePrimarySlots(value); break;
+            case 0xAA: break; // to access the register that control the keyboard CAP LED, two signals to data recorder and a matrix row (use the port C of PPI)
+            case 0xAB: break; // to access the ports control register. (Write only)
+            case 0xFC: this->slot_setupPage(3, value); break;
+            case 0xFD: this->slot_setupPage(2, value); break;
+            case 0xFE: this->slot_setupPage(1, value); break;
+            case 0xFF: this->slot_setupPage(0, value); break;
+            default: printf("ignore an unknown out port $%02X <- $%02X\n", port, value);
         }
     }
 }
@@ -419,7 +412,7 @@ inline void TinyMSX::consumeClock(int clocks)
         this->sn76489.ctx.bobo += clocks * PSG_CLOCK;
         while (0 < this->sn76489.ctx.bobo) {
             this->sn76489.ctx.bobo -= CPU_CLOCK;
-            this->sn76489.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+            this->sn76489.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
             this->soundBufferCursor += 2;
         }
     } else if (this->isMSX1Family()) {

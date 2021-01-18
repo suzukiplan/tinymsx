@@ -54,9 +54,10 @@ class AY8910
         int eFace;
         unsigned int eHolding;
         unsigned int random;
+        int mix[3];
     } ctx;
 
-    void reset()
+    void reset(int gain)
     {
         memset(&this->ctx, 0, sizeof(this->ctx));
         this->ctx.ePeriod = 1;
@@ -64,11 +65,11 @@ class AY8910
         this->ctx.random = 0xFFFF;
         this->ctx.reg[7] = 0x80;
         this->ctx.reg[14] = 0x7F;
-        unsigned char regMask[16] = { 0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0xFF, 0x1F, 0x1F, 0x1F, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF};
+        unsigned char regMask[16] = {0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0xFF, 0x1F, 0x1F, 0x1F, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF};
         memcpy(this->regMask, regMask, sizeof(this->regMask));
-        unsigned int levels[32] = { 0, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 9, 10, 12, 15, 18, 22, 26, 31, 37, 44, 53, 63, 75, 90, 107, 127, 151, 180, 214, 255, 255};
+        unsigned int levels[32] = {0, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 9, 10, 12, 15, 18, 22, 26, 31, 37, 44, 53, 63, 75, 90, 107, 127, 151, 180, 214, 255, 255};
         memcpy(this->levels, levels, sizeof(this->levels));
-        for (int i = 0; i < 32; i++) this->levels[i] *= 16;
+        for (int i = 0; i < 32; i++) this->levels[i] *= gain;
     }
 
     inline void latch(unsigned char value) { this->ctx.latch = value & 0x0F; }
@@ -167,13 +168,15 @@ class AY8910
         int mix = this->getOutputMix(0, this->ctx.reg[7], cycles);
         mix += this->getOutputMix(1, this->ctx.reg[7] >> 1, cycles);
         mix += this->getOutputMix(2, this->ctx.reg[7] >> 2, cycles);
-        if (32767 < mix) mix = 32767;
-        else if (mix < -32768) mix = -32768;
+        if (32767 < mix)
+            mix = 32767;
+        else if (mix < -32768)
+            mix = -32768;
         *left = (short)mix;
         *right = *left;
     }
 
-private:
+  private:
     inline int getRandom()
     {
         if (this->ctx.random & 1) {
@@ -188,20 +191,23 @@ private:
 
     inline int getOutputMix(int ch, unsigned int mask, unsigned int cycles)
     {
-        int mix = 0;
         unsigned int volume;
+        int mix = this->ctx.mix[ch];
         if (this->ctx.tPeriod[ch]) {
             this->ctx.tCounter[ch] += cycles;
             while (0 <= this->ctx.tCounter[ch]) {
                 this->ctx.tCounter[ch] -= this->ctx.tPeriod[ch];
                 this->ctx.tUp[ch] ^= 1;
             }
-        } else this->ctx.tUp[ch] = 1;
+        } else
+            this->ctx.tUp[ch] = 1;
         if (((mask & 0x01) || this->ctx.tUp[ch]) && ((mask & 0x08) || this->ctx.nUp)) {
             volume = this->ctx.reg[8 + ch] << 1;
-            mix = volume & 0x20 ? this->levels[this->ctx.eState] : this->levels[volume & 0x1F];
+            this->ctx.mix[ch] = volume & 0x20 ? this->levels[this->ctx.eState] : this->levels[volume & 0x1F];
+        } else {
+            this->ctx.mix[ch] >>= 1;
         }
-        return mix;
+        return (mix + this->ctx.mix[ch]) >> 1;
     }
 };
 
