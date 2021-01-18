@@ -426,7 +426,7 @@ inline void TinyMSX::consumeClock(int clocks)
         this->ay8910.ctx.bobo += clocks * PSG_CLOCK;
         while (0 < this->ay8910.ctx.bobo) {
             this->ay8910.ctx.bobo -= CPU_CLOCK;
-            this->ay8910.execute(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1]);
+            this->ay8910.tick(&this->soundBuffer[this->soundBufferCursor], &this->soundBuffer[this->soundBufferCursor + 1], 81);
             this->soundBufferCursor += 2;
         }
     }
