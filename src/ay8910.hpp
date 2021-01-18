@@ -164,9 +164,9 @@ class AY8910
         } else {
             this->ctx.nUp = this->getRandom();
         }
-        int mix = this->getOutputMix(0, cycles);
-        mix += this->getOutputMix(1, cycles);
-        mix += this->getOutputMix(2, cycles);
+        int mix = this->getOutputMix(0, this->ctx.reg[7], cycles);
+        mix += this->getOutputMix(1, this->ctx.reg[7] >> 1, cycles);
+        mix += this->getOutputMix(2, this->ctx.reg[7] >> 2, cycles);
         if (32767 < mix) mix = 32767;
         else if (mix < -32768) mix = -32768;
         *left = (short)mix;
@@ -186,7 +186,7 @@ private:
         }
     }
 
-    inline int getOutputMix(int ch, unsigned int cycles)
+    inline int getOutputMix(int ch, unsigned int mask, unsigned int cycles)
     {
         int mix = 0;
         unsigned int volume;
@@ -197,7 +197,7 @@ private:
                 this->ctx.tUp[ch] ^= 1;
             }
         } else this->ctx.tUp[ch] = 1;
-        if (((this->ctx.reg[7] & 0x01) || this->ctx.tUp[ch]) && ((this->ctx.reg[7] & 0x08) || this->ctx.nUp)) {
+        if (((mask & 0x01) || this->ctx.tUp[ch]) && ((mask & 0x08) || this->ctx.nUp)) {
             volume = this->ctx.reg[8 + ch] << 1;
             mix = volume & 0x20 ? this->levels[this->ctx.eState] : this->levels[volume & 0x1F];
         }
