@@ -240,6 +240,13 @@ class TMS9918A
         if (externalVideoInput != this->isEnabledExternalVideoInput()) {
             printf("Change VDP external video input enabled: %s\n", this->isEnabledExternalVideoInput() ? "ENABLED" : "DISABLED");
         }
+        switch (this->ctx.tmpAddr[1] & 0b00001111) {
+            case 0x2: printf("update Pattern Name Table address: $%04X\n", this->ctx.reg[2] << 10); break;
+            case 0x3: printf("update Color Table address: $%04X (MASK:0b%d%d%d%d%d%d%d11)\n", (this->ctx.reg[3] & 0x80) << 6, this->ctx.reg[3] & 0b01000000 ? 1 : 0, this->ctx.reg[3] & 0b00100000 ? 1 : 0, this->ctx.reg[3] & 0b00010000 ? 1 : 0, this->ctx.reg[3] & 0b00001000 ? 1 : 0, this->ctx.reg[3] & 0b00000100 ? 1 : 0, this->ctx.reg[3] & 0b00000010 ? 1 : 0, this->ctx.reg[3] & 0b00000001 ? 1 : 0); break;
+            case 0x4: printf("update Pattern Generator Table address: $%04X (MASK:0b%d%d1111111)\n", (this->ctx.reg[4] & 0b100) << 11, this->ctx.reg[4] & 0b010 ? 1 : 0, this->ctx.reg[4] & 0b001 ? 1 : 0); break;
+            case 0x5: printf("update Sprite Attribute Table address: $%04X\n", this->ctx.reg[5] << 7); break;
+            case 0x6: printf("update Sprite Generator Table address: $%04X\n", this->ctx.reg[6] << 11); break;
+        }
 #endif
     }
 
