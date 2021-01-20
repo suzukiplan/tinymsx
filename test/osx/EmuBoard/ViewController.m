@@ -40,7 +40,7 @@
             [weakSelf _openURL:[NSURL fileURLWithPath:romFile]];
         });
     }
-    self.view.frame = CGRectMake(0, 0, VRAM_VIEW_WIDTH * 2, VRAM_VIEW_HEIGHT * 2);
+    self.view.frame = CGRectMake(0, 0, VRAM_WIDTH * 2, VRAM_HEIGHT * 2);
     CALayer* layer = [CALayer layer];
     [layer setBackgroundColor:CGColorCreateGenericRGB(0.0, 0.0, 0.2525, 1.0)];
     [self.view setWantsLayer:YES];
@@ -80,7 +80,7 @@
 - (NSRect)calcVramRect
 {
     // 幅を16とした時の高さのアスペクト比を計算
-    CGFloat aspectY = VRAM_VIEW_HEIGHT / (VRAM_VIEW_WIDTH / 16.0);
+    CGFloat aspectY = VRAM_HEIGHT / (VRAM_WIDTH / 16.0);
     // window中央にVRAMをaspect-fitで描画
     if (self.view.frame.size.height < self.view.frame.size.width) {
         CGFloat height = self.view.frame.size.height;
@@ -179,25 +179,25 @@
 - (void)menuViewSize1x:(id)sender
 {
     if (_isFullScreen) return;
-    [self.view.window setContentSize:NSMakeSize(VRAM_VIEW_WIDTH * 1, VRAM_VIEW_HEIGHT * 1)];
+    [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 1, VRAM_HEIGHT * 1)];
 }
 
 - (void)menuViewSize2x:(id)sender
 {
     if (_isFullScreen) return;
-    [self.view.window setContentSize:NSMakeSize(VRAM_VIEW_WIDTH * 2, VRAM_VIEW_HEIGHT * 2)];
+    [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 2, VRAM_HEIGHT * 2)];
 }
 
 - (void)menuViewSize3x:(id)sender
 {
     if (_isFullScreen) return;
-    [self.view.window setContentSize:NSMakeSize(VRAM_VIEW_WIDTH * 3, VRAM_VIEW_HEIGHT * 3)];
+    [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 3, VRAM_HEIGHT * 3)];
 }
 
 - (void)menuViewSize4x:(id)sender
 {
     if (_isFullScreen) return;
-    [self.view.window setContentSize:NSMakeSize(VRAM_VIEW_WIDTH * 4, VRAM_VIEW_HEIGHT * 4)];
+    [self.view.window setContentSize:NSMakeSize(VRAM_WIDTH * 4, VRAM_HEIGHT * 4)];
 }
 
 - (void)menuQuickSaveToMemory:(id)sender
