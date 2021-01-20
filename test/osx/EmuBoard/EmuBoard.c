@@ -43,7 +43,7 @@ static int getTypeOfRom(char* rom, size_t romSize)
 {
     if (0x8000 < romSize) {
         puts("open as MSX1 ASC8 mega-rom file");
-        return TINYMSX_TYPE_MSX1_ASC8X;
+        return TINYMSX_TYPE_MSX1_ASC8;
     } else if (64 * 1024 == romSize) {
         puts("open as MSX1 64KB ROM file");
         return TINYMSX_TYPE_MSX1;
