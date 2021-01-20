@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 char emu_msx_bios[0x8000];
-unsigned short emu_vram[256 * 192];
+unsigned short emu_vram[VRAM_WIDTH * VRAM_HEIGHT];
 unsigned char emu_key = 0;
 static void* spu;
 pthread_mutex_t sound_locker;
@@ -43,7 +43,7 @@ static int getTypeOfRom(char* rom, size_t romSize)
 {
     if (0x8000 < romSize) {
         puts("open as MSX1 ASC8 mega-rom file");
-        return TINYMSX_TYPE_MSX1_ASC8;
+        return TINYMSX_TYPE_MSX1_ASC8X;
     } else if (64 * 1024 == romSize) {
         puts("open as MSX1 64KB ROM file");
         return TINYMSX_TYPE_MSX1;

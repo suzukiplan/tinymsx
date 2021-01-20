@@ -30,6 +30,35 @@
 
 #include <string.h>
 
+#define TMS9918A_SCREEN_WIDTH 284
+#define TMS9918A_SCREEN_HEIGHT 240
+
+/**
+ * Note about the Screen Resolution: 284 x 240
+ * =================================================
+ * Pixel (horizontal) display timings:
+ *   Left blanking:   2Hz (skip)
+ *     Color burst:  14Hz (skip)
+ *   Left blanking:   8Hz (skip)
+ *     Left border:  13Hz (RENDER)
+ *  Active display: 256Hz (RENDER)
+ *    Right border:  15Hz (RENDER)
+ *  Right blanking:   8Hz (skip)
+ * Horizontal sync:  26Hz (skip)
+ *           Total: 342Hz (render: 284 pixels)
+ * =================================================
+ * Scanline (vertical) display timings:
+ *    Top blanking:  13 lines (skip)
+ *      Top border:   3 lines (skip)
+ *      Top border:  24 lines (RENDER)
+ *  Active display: 192 lines (RENDER)
+ *   Bottom border:  24 lines (RENDER)
+ * Bottom blanking:   3 lines (skip)
+ *   Vertical sync:   3 lines (skip)
+ *           Total: 262 lines (render: 240 lines)
+ * =================================================
+ */
+
 class TMS9918A
 {
   private:
@@ -38,7 +67,7 @@ class TMS9918A
     void (*detectBreak)(void* arg);
 
   public:
-    unsigned short display[256 * 192];
+    unsigned short display[TMS9918A_SCREEN_WIDTH * TMS9918A_SCREEN_HEIGHT];
     unsigned short palette[16];
 
     struct Context {
@@ -50,9 +79,11 @@ class TMS9918A
         unsigned char reg[8];
         unsigned char tmpAddr[2];
         unsigned short addr;
+        unsigned short writeAddr;
         unsigned char stat;
         unsigned char latch;
         unsigned char readBuffer;
+        unsigned char writeWait;
     } ctx;
 
     TMS9918A()
@@ -113,12 +144,27 @@ class TMS9918A
     inline void tick()
     {
         this->ctx.countH++;
-        if (293 == this->ctx.countH) {
-            this->renderScanline(this->ctx.countV - 40);
-        } else if (342 == this->ctx.countH) {
+        // render backdrop border
+        if (3 <= this->ctx.countV && this->ctx.countV < 3 + TMS9918A_SCREEN_HEIGHT) {
+            if (24 <= this->ctx.countH && this->ctx.countH < 24 + TMS9918A_SCREEN_WIDTH) {
+                int dcur = (this->ctx.countV - 3) * TMS9918A_SCREEN_WIDTH + this->ctx.countH - 24;
+                this->display[dcur] = this->getBackdropColor();
+            } else if (24 + TMS9918A_SCREEN_WIDTH == this->ctx.countH) {
+                this->renderScanline(this->ctx.countV - 27);
+            }
+        }
+        // delay write the VRAM
+        if (this->ctx.writeWait) {
+            this->ctx.writeWait--;
+            if (0 == this->ctx.writeWait) {
+                this->ctx.ram[this->ctx.writeAddr] = this->ctx.readBuffer;
+            }
+        }
+        // sync blank or end-of-frame
+        if (342 == this->ctx.countH) {
             this->ctx.countH -= 342;
             switch (++this->ctx.countV) {
-                case 251:
+                case 238:
                     this->ctx.stat |= 0x80;
                     if (this->isEnabledInterrupt()) {
                         this->detectBlank(this->arg);
@@ -152,7 +198,8 @@ class TMS9918A
     {
         this->ctx.addr &= this->getVramSize() - 1;
         this->ctx.readBuffer = value;
-        this->ctx.ram[this->ctx.addr++] = this->ctx.readBuffer;
+        this->ctx.writeAddr = this->ctx.addr++;
+        this->ctx.writeWait = 10; // write back to VRAM from readBuffer after 10Hz (about 1.86 micro second delay)
         this->ctx.latch = 0;
     }
 
@@ -178,17 +225,11 @@ class TMS9918A
   private:
     inline void renderScanline(int lineNumber)
     {
-        if (0 <= lineNumber && lineNumber < 192) {
-            if (this->isEnabledScreen()) {
-                switch (this->getVideoMode()) {
-                    case 0: this->renderScanlineMode0(lineNumber); break;
-                    case 1: this->renderEmptyScanline(lineNumber); break;
-                    case 2: this->renderScanlineMode2(lineNumber); break;
-                    case 3: this->renderScanlineMode3(lineNumber); break;
-                    default: this->renderEmptyScanline(lineNumber);
-                }
-            } else {
-                this->renderEmptyScanline(lineNumber);
+        // TODO: Several modes (1, 3, undocumented) are not implemented
+        if (0 <= lineNumber && lineNumber < 192 && this->isEnabledScreen()) {
+            switch (this->getVideoMode()) {
+                case 0: this->renderScanlineMode0(lineNumber); break;
+                case 2: this->renderScanlineMode2(lineNumber); break;
             }
         }
     }
@@ -258,7 +299,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int cur = lineNumber * 256;
+        int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + pixelLine];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
@@ -267,14 +308,14 @@ class TMS9918A
             cc[1] = cc[1] ? cc[1] : bd;
             cc[0] = c & 0x0F;
             cc[0] = cc[0] ? cc[0] : bd;
-            this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-            this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
+            this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
         }
         renderSprites(lineNumber);
     }
@@ -293,7 +334,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int cur = lineNumber * 256;
+        int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
         int ci = (lineNumber / 64) * 256;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
@@ -303,31 +344,16 @@ class TMS9918A
             cc[1] = cc[1] ? cc[1] : bd;
             cc[0] = c & 0x0F;
             cc[0] = cc[0] ? cc[0] : bd;
-            this->display[cur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
-            this->display[cur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
-            this->display[cur++] = this->palette[cc[ptn & 0b00000001]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b10000000) >> 7]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b01000000) >> 6]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00100000) >> 5]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00010000) >> 4]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00001000) >> 3]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00000100) >> 2]];
+            this->display[dcur++] = this->palette[cc[(ptn & 0b00000010) >> 1]];
+            this->display[dcur++] = this->palette[cc[ptn & 0b00000001]];
         }
         renderSprites(lineNumber);
-    }
-
-    inline void renderScanlineMode3(int lineNumber)
-    {
-        // todo: draw Mode 3 characters
-        renderSprites(lineNumber);
-    }
-
-    inline void renderEmptyScanline(int lineNumber)
-    {
-        int bd = this->getBackdropColor();
-        int cur = lineNumber * 256;
-        for (int i = 0; i < 256; i++) {
-            this->display[cur++] = palette[bd];
-        }
     }
 
     inline void renderSprites(int lineNumber)
@@ -350,6 +376,7 @@ class TMS9918A
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
+        const int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
         for (int i = 0; i < 32; i++) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx.ram[cur++];
@@ -375,7 +402,6 @@ class TMS9918A
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
@@ -415,7 +441,6 @@ class TMS9918A
                             this->ctx.stat |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        int dcur = lineNumber * 256;
                         for (int j = 0; j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
@@ -445,7 +470,6 @@ class TMS9918A
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
@@ -485,7 +509,6 @@ class TMS9918A
                             this->ctx.stat |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        int dcur = lineNumber * 256;
                         for (int j = 0; j < 8; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;

@@ -29,10 +29,10 @@ static volatile int bno;
         img[1] = nil;
         // create image buffer
         CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-        NSInteger width = VRAM_VIEW_WIDTH;
-        NSInteger height = VRAM_VIEW_HEIGHT;
+        NSInteger width = VRAM_WIDTH;
+        NSInteger height = VRAM_HEIGHT;
         for (int i = 0; i < 2; i++) {
-            img[i] = CGBitmapContextCreate(imgbuf[i], width, height, 5, 2 * VRAM_VIEW_WIDTH, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder16Little);
+            img[i] = CGBitmapContextCreate(imgbuf[i], width, height, 5, 2 * VRAM_WIDTH, colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder16Little);
         }
         CFRelease(colorSpace);
     }
@@ -44,9 +44,9 @@ static volatile int bno;
     bno = 1 - bno;
     unsigned short* buf = imgbuf[1 - bno];
     int i = 0;
-    for (int y = VRAM_VIEW_TOP; y < VRAM_VIEW_BOTTOM; y++) {
-        int ptr = y * VRAM_WIDTH + VRAM_VIEW_LEFT;
-        for (int x = VRAM_VIEW_LEFT; x < VRAM_VIEW_RIGHT; x++) {
+    for (int y = 0; y < VRAM_HEIGHT; y++) {
+        int ptr = y * VRAM_WIDTH;
+        for (int x = 0; x < VRAM_WIDTH; x++) {
             buf[i++] = emu_vram[ptr++];
         }
     }
