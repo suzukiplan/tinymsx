@@ -86,13 +86,7 @@ class TMS9918A
         unsigned char writeWait;
     } ctx;
 
-    TMS9918A()
-    {
-        memset(palette, 0, sizeof(palette));
-        this->reset();
-    }
-
-    void initialize(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
+    TMS9918A(int colorMode, void* arg, void (*detectBlank)(void*), void (*detectBreak)(void*))
     {
         this->arg = arg;
         this->detectBlank = detectBlank;
@@ -129,6 +123,7 @@ class TMS9918A
 
     inline int getVideoMode()
     {
+        // NOTE: undocumented mode is not support
         if (ctx.reg[1] & 0b00010000) return 1; // Mode 1
         if (ctx.reg[0] & 0b00000010) return 2; // Mode 2
         if (ctx.reg[1] & 0b00001000) return 3; // Mode 3
@@ -291,6 +286,12 @@ class TMS9918A
 #endif
     }
 
+    inline int getDisplayAddrFromActiveLineNumber(int lineNumber)
+    {
+        // left border (13px) + top border (24px)
+        return lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
+    }
+
     inline void renderScanlineMode0(int lineNumber)
     {
         int pn = (this->ctx.reg[2] & 0b00001111) << 10;
@@ -299,7 +300,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
+        int dcur = this->getDisplayAddrFromActiveLineNumber(lineNumber);
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + nam[i] * 8 + pixelLine];
             unsigned char c = this->ctx.ram[ct + nam[i] / 8];
@@ -334,7 +335,7 @@ class TMS9918A
         int bd = this->ctx.reg[7] & 0b00001111;
         int pixelLine = lineNumber % 8;
         unsigned char* nam = &this->ctx.ram[pn + lineNumber / 8 * 32];
-        int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
+        int dcur = this->getDisplayAddrFromActiveLineNumber(lineNumber);
         int ci = (lineNumber / 64) * 256;
         for (int i = 0; i < 32; i++) {
             unsigned char ptn = this->ctx.ram[pg + ((nam[i] + ci) & pmask) * 8 + pixelLine];
@@ -376,7 +377,7 @@ class TMS9918A
         unsigned char wlog[256];
         memset(dlog, 0, sizeof(dlog));
         memset(wlog, 0, sizeof(wlog));
-        const int dcur = lineNumber * TMS9918A_SCREEN_WIDTH + 13 + 24 * TMS9918A_SCREEN_WIDTH;
+        const int dcur = this->getDisplayAddrFromActiveLineNumber(lineNumber);
         for (int i = 0; i < 32; i++) {
             int cur = sa + i * 4;
             unsigned char y = this->ctx.ram[cur++];
