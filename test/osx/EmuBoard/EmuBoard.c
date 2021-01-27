@@ -154,3 +154,40 @@ void emu_loadState(const void* state, size_t size)
     if (!emu_initialized || !emu_msx) return;
     tinymsx_load(emu_msx, state, size);
 }
+
+void emu_printDump()
+{
+    if (!emu_initialized || !emu_msx) return;
+    unsigned char* vram = tinymsx_get_vram(emu_msx);
+    unsigned short nameTableAddr = tinymsx_get_nameTableAddr(emu_msx);
+    puts("[NAME TABLE]");
+    printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F\n");
+    for (int i = 0; i < 24; i++) {
+        printf("%04X:", nameTableAddr);
+        for (int j = 0; j < 32; j++) {
+            printf(" %02X", vram[nameTableAddr++]);
+        }
+        printf("\n");
+    }
+}
+
+static unsigned char ramKeep[0x4000];
+
+void emu_keepRam()
+{
+    if (!emu_initialized || !emu_msx) return;
+    memcpy(ramKeep, tinymsx_get_ram(emu_msx), 0x4000);
+}
+
+void emu_compareRam()
+{
+    unsigned char ramCompare[0x4000];
+    if (!emu_initialized || !emu_msx) return;
+    memcpy(ramCompare, tinymsx_get_ram(emu_msx), 0x4000);
+    puts("[RAM COMPARE]");
+    for (int i = 0; i < 0x4000; i++) {
+        if (ramKeep[i] != ramCompare[i]) {
+            printf("- %04X: %02X -> %02X\n", i, ramKeep[i], ramCompare[i]);
+        }
+    }
+}

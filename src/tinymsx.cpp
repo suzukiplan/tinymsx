@@ -98,15 +98,7 @@ void TinyMSX::reset()
     } else if (this->isMSX1Family()) {
         this->ay8910.reset(27);
         this->slot_reset();
-        if (this->isMSX1_GameMaster2()) {
-            this->slotGM2.init(this->rom);
-        } else if (this->isMSX1_ASC8()) {
-            this->slotASC8.init(this->rom);
-        } else if (this->isMSX1_ASC8W()) {
-            this->slotASC8W.init(this->rom);
-        } else if (this->isMSX1_ASC8X()) {
-            this->slotASC8X.init(this->rom);
-        }
+        this->slot_init(this->rom);
         this->slot_add(0, 0, &this->bios.main[0x0000], true);
         this->slot_add(0, 1, &this->bios.main[0x4000], true);
         if (this->rom) {
@@ -153,69 +145,40 @@ void TinyMSX::tick(unsigned char pad1, unsigned char pad2)
 {
     this->pad[0] = 0;
     this->pad[1] = 0;
-    switch (this->type) {
-        case TINYMSX_TYPE_SG1000:
-            this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0 : 0b00000001;
-            this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0 : 0b00000010;
-            this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0 : 0b00000100;
-            this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0 : 0b00001000;
-            this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0 : 0b00010000;
-            this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0 : 0b00100000;
-            this->pad[0] |= pad2 & TINYMSX_JOY_UP ? 0 : 0b01000000;
-            this->pad[0] |= pad2 & TINYMSX_JOY_DW ? 0 : 0b10000000;
-            this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0 : 0b00000001;
-            this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0 : 0b00000010;
-            this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0 : 0b00000100;
-            this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0 : 0b00001000;
-            this->pad[1] |= 0b11110000;
-            break;
-        case TINYMSX_TYPE_MSX1:
-        case TINYMSX_TYPE_MSX1_GameMaster2:
-        case TINYMSX_TYPE_MSX1_ASC8:
-        case TINYMSX_TYPE_MSX1_ASC8W:
-        case TINYMSX_TYPE_MSX1_ASC8X:
-            this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0b00001000 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_S1 ? 0b01000000 : 0;
-            this->pad[0] |= pad1 & TINYMSX_JOY_S2 ? 0b10000000 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_UP ? 0b00000001 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_DW ? 0b00000010 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0b00000100 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0b00001000 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
-            this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
-            this->ay8910.setPads(this->pad[0], this->pad[1]);
-            break;
+    if (this->isMSX1Family()) {
+        this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0b00000001 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0b00000010 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0b00000100 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0b00001000 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_S1 ? 0b01000000 : 0;
+        this->pad[0] |= pad1 & TINYMSX_JOY_S2 ? 0b10000000 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_UP ? 0b00000001 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_DW ? 0b00000010 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0b00000100 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0b00001000 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0b00010000 : 0;
+        this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0b00100000 : 0;
+        this->ay8910.setPads(this->pad[0], this->pad[1]);
+    } else if (this->isSG1000()) {
+        this->pad[0] |= pad1 & TINYMSX_JOY_UP ? 0 : 0b00000001;
+        this->pad[0] |= pad1 & TINYMSX_JOY_DW ? 0 : 0b00000010;
+        this->pad[0] |= pad1 & TINYMSX_JOY_LE ? 0 : 0b00000100;
+        this->pad[0] |= pad1 & TINYMSX_JOY_RI ? 0 : 0b00001000;
+        this->pad[0] |= pad1 & TINYMSX_JOY_T1 ? 0 : 0b00010000;
+        this->pad[0] |= pad1 & TINYMSX_JOY_T2 ? 0 : 0b00100000;
+        this->pad[0] |= pad2 & TINYMSX_JOY_UP ? 0 : 0b01000000;
+        this->pad[0] |= pad2 & TINYMSX_JOY_DW ? 0 : 0b10000000;
+        this->pad[1] |= pad2 & TINYMSX_JOY_LE ? 0 : 0b00000001;
+        this->pad[1] |= pad2 & TINYMSX_JOY_RI ? 0 : 0b00000010;
+        this->pad[1] |= pad2 & TINYMSX_JOY_T1 ? 0 : 0b00000100;
+        this->pad[1] |= pad2 & TINYMSX_JOY_T2 ? 0 : 0b00001000;
+        this->pad[1] |= 0b11110000;
     }
     if (this->cpu) {
         this->cpu->execute(0x7FFFFFFF);
     }
-#if 0
-    memset(this->getDisplayBuffer(), 0, 256 * 64 * 2);
-    int pgBase = (this->tms9918.ctx.reg[4] & 0b00000100) << 11;
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 32; x++) {
-            int pg = pgBase + (y * 32 + x) * 8; // + 256 * 8;
-            int addr = y * 8 * 256 + x * 8;
-            for (int line = 0; line < 8; line++) {
-                this->getDisplayBuffer()[addr + 0] = this->tms9918.ctx.ram[pg] & 0b10000000 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 1] = this->tms9918.ctx.ram[pg] & 0b01000000 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 2] = this->tms9918.ctx.ram[pg] & 0b00100000 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 3] = this->tms9918.ctx.ram[pg] & 0b00010000 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 4] = this->tms9918.ctx.ram[pg] & 0b00001000 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 5] = this->tms9918.ctx.ram[pg] & 0b00000100 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 6] = this->tms9918.ctx.ram[pg] & 0b00000010 ? 0xFFFF : 0x0000;
-                this->getDisplayBuffer()[addr + 7] = this->tms9918.ctx.ram[pg] & 0b00000001 ? 0xFFFF : 0x0000;
-                addr += 256;
-                pg++;
-            }
-        }
-    }
-#endif
 }
 
 void* TinyMSX::getSoundBuffer(size_t* size)
@@ -498,15 +461,9 @@ const void* TinyMSX::saveState(size_t* size)
     } else if (this->isMSX1()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_SLT, sizeof(this->slot.ctx), &this->slot.ctx);
-    } else if (this->isMSX1_GameMaster2()) {
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_GM2, sizeof(this->slotGM2.ctx), &this->slotGM2.ctx);
     } else if (this->isMSX1_ASC8()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A08, sizeof(this->slotASC8.ctx), &this->slotASC8.ctx);
-    } else if (this->isMSX1_ASC8W()) {
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
-        ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A8W, sizeof(this->slotASC8W.ctx), &this->slotASC8W.ctx);
     } else if (this->isMSX1_ASC8X()) {
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_AY3, sizeof(this->ay8910.ctx), &this->ay8910.ctx);
         ptr += writeSaveState(this->tmpBuffer, ptr, STATE_CHUNK_A8X, sizeof(this->slotASC8X.ctx), &this->slotASC8X.ctx);
@@ -541,16 +498,10 @@ void TinyMSX::loadState(const void* data, size_t size)
             memcpy(&this->ay8910.ctx, d, ds);
         } else if (0 == strncmp(ch, STATE_CHUNK_SLT, 2)) {
             memcpy(&this->slot.ctx, d, ds);
-        } else if (0 == strncmp(ch, STATE_CHUNK_GM2, 2)) {
-            memcpy(&this->slotGM2.ctx, d, ds);
-            this->slotGM2.reloadBank();
-        } else if (0 == strncmp(ch, STATE_CHUNK_A08, 2)) {
+        } else if (this->isMSX1_ASC8() && 0 == strncmp(ch, STATE_CHUNK_A08, 2)) {
             memcpy(&this->slotASC8.ctx, d, ds);
             this->slotASC8.reloadBank();
-        } else if (0 == strncmp(ch, STATE_CHUNK_A8W, 2)) {
-            memcpy(&this->slotASC8W.ctx, d, ds);
-            this->slotASC8W.reloadBank();
-        } else if (0 == strncmp(ch, STATE_CHUNK_A8X, 2)) {
+        } else if (this->isMSX1_ASC8X() && 0 == strncmp(ch, STATE_CHUNK_A8X, 2)) {
             memcpy(&this->slotASC8X.ctx, d, ds);
             this->slotASC8X.reloadBank();
         } else if (0 == strncmp(ch, STATE_CHUNK_IO, 2)) {

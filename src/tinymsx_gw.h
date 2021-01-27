@@ -46,6 +46,9 @@ void tinymsx_load_bios_msx1_main(const void* context, void* bios, size_t size);
 void tinymsx_load_bios_msx1_logo(const void* context, void* bios, size_t size);
 void tinymsx_setup_special_key1(const void* context, unsigned char c, int isTenKey);
 void tinymsx_setup_special_key2(const void* context, unsigned char c, int isTenKey);
+unsigned char* tinymsx_get_vram(const void* context);
+unsigned short tinymsx_get_nameTableAddr(const void* context);
+unsigned char* tinymsx_get_ram(const void* context);
 
 #ifdef __cplusplus
 };

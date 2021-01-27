@@ -19,3 +19,6 @@ unsigned int emu_getScore(void);
 int emu_isGameOver(void);
 const void* emu_saveState(size_t* size);
 void emu_loadState(const void* state, size_t size);
+void emu_printDump(void);
+void emu_keepRam(void);
+void emu_compareRam(void);

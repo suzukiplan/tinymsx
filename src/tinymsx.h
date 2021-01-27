@@ -31,9 +31,7 @@
 #include "tinymsx_def.h"
 #include "msxslot.hpp"
 #include "msxslot_asc8.hpp"
-#include "msxslot_asc8w.hpp"
 #include "msxslot_asc8x.hpp"
-#include "msxslot_gm2.hpp"
 #include "tms9918a.hpp"
 #include "sn76489.hpp"
 #include "ay8910.hpp"
@@ -60,9 +58,7 @@ class TinyMSX {
         unsigned char io[0x100];
         unsigned char ram[0x10000];
         MsxSlot slot;
-        MsxSlotGM2 slotGM2;
         MsxSlotASC8 slotASC8;
-        MsxSlotASC8W slotASC8W;
         MsxSlotASC8X slotASC8X;
         Z80* cpu;
         TinyMSX(int type, const void* rom, size_t romSize, size_t ramSize, int colorMode);
@@ -80,11 +76,9 @@ class TinyMSX {
         void loadState(const void* data, size_t size);
         inline bool isSG1000() { return this->type == TINYMSX_TYPE_SG1000; }
         inline bool isMSX1() { return this->type == TINYMSX_TYPE_MSX1; }
-        inline bool isMSX1_GameMaster2() { return this->type == TINYMSX_TYPE_MSX1_GameMaster2; }
         inline bool isMSX1_ASC8() { return this->type == TINYMSX_TYPE_MSX1_ASC8; }
-        inline bool isMSX1_ASC8W() { return this->type == TINYMSX_TYPE_MSX1_ASC8W; }
         inline bool isMSX1_ASC8X() { return this->type == TINYMSX_TYPE_MSX1_ASC8X; }
-        inline bool isMSX1Family() { return this->isMSX1() || this->isMSX1_GameMaster2() || this->isMSX1_ASC8() || this->isMSX1_ASC8W() || this->isMSX1_ASC8X(); }
+        inline bool isMSX1Family() { return this->isMSX1() || this->isMSX1_ASC8() || this->isMSX1_ASC8X(); }
 
     private:
         inline void setupSpecialKeyV(int n, int x, int y) {
@@ -100,86 +94,71 @@ class TinyMSX {
         inline bool loadSpecificSizeFile(const char* path, void* buffer, size_t size);
         size_t calcAvairableRamSize();
 
+        inline void slot_init(unsigned char* rom) {
+            if (this->isMSX1_ASC8()) this->slotASC8.init(rom);
+            else if (this->isMSX1_ASC8X()) this->slotASC8X.init(rom);
+        }
+
         inline void slot_reset() {
             if (this->isMSX1()) this->slot.reset();
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.reset();
             else if (this->isMSX1_ASC8()) this->slotASC8.reset();
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.reset();
             else if (this->isMSX1_ASC8X()) this->slotASC8X.reset();
         }
 
         inline void slot_setupPage(int index, int slotNumber) {
             if (this->isMSX1()) this->slot.setupPage(index, slotNumber);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.setupPage(index, slotNumber);
             else if (this->isMSX1_ASC8()) this->slotASC8.setupPage(index, slotNumber);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.setupPage(index, slotNumber);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.setupPage(index, slotNumber);
         }
 
         inline void slot_setupSlot(int index, int slotStatus) {
             if (this->isMSX1()) this->slot.setupSlot(index, slotStatus);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.setupSlot(index, slotStatus);
             else if (this->isMSX1_ASC8()) this->slotASC8.setupSlot(index, slotStatus);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.setupSlot(index, slotStatus);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.setupSlot(index, slotStatus);
         }
     
         inline void slot_add(int ps, int ss, unsigned char* data, bool isReadOnly) {
             if (this->isMSX1()) this->slot.add(ps, ss, data, isReadOnly);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.add(ps, ss, data, isReadOnly);
             else if (this->isMSX1_ASC8()) this->slotASC8.add(ps, ss, data, isReadOnly);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.add(ps, ss, data, isReadOnly);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.add(ps, ss, data, isReadOnly);
         }
 
         inline unsigned char slot_readPrimaryStatus() {
             if (this->isMSX1()) return this->slot.readPrimaryStatus();
-            else if (this->isMSX1_GameMaster2()) return this->slotGM2.readPrimaryStatus();
             else if (this->isMSX1_ASC8()) return this->slotASC8.readPrimaryStatus();
-            else if (this->isMSX1_ASC8W()) return this->slotASC8W.readPrimaryStatus();
             else if (this->isMSX1_ASC8X()) return this->slotASC8X.readPrimaryStatus();
             else return 0xFF;
         }
 
         inline void slot_changePrimarySlots(unsigned char value) {
             if (this->isMSX1()) this->slot.changePrimarySlots(value);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.changePrimarySlots(value);
             else if (this->isMSX1_ASC8()) this->slotASC8.changePrimarySlots(value);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.changePrimarySlots(value);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.changePrimarySlots(value);
         }
 
         inline unsigned char slot_readSecondaryStatus() {
             if (this->isMSX1()) return this->slot.readSecondaryStatus();
-            else if (this->isMSX1_GameMaster2()) return this->slotGM2.readSecondaryStatus();
             else if (this->isMSX1_ASC8()) return this->slotASC8.readSecondaryStatus();
-            else if (this->isMSX1_ASC8W()) return this->slotASC8W.readSecondaryStatus();
             else if (this->isMSX1_ASC8X()) return this->slotASC8X.readSecondaryStatus();
             else return 0xFF;
         }
 
         inline void slot_changeSecondarySlots(unsigned char value) {
             if (this->isMSX1()) this->slot.changeSecondarySlots(value);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.changeSecondarySlots(value);
             else if (this->isMSX1_ASC8()) this->slotASC8.changeSecondarySlots(value);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.changeSecondarySlots(value);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.changeSecondarySlots(value);
         }
 
         inline unsigned char slot_read(unsigned short addr) {
             if (this->isMSX1()) return this->slot.read(addr);
-            else if (this->isMSX1_GameMaster2()) return this->slotGM2.read(addr);
             else if (this->isMSX1_ASC8()) return this->slotASC8.read(addr);
-            else if (this->isMSX1_ASC8W()) return this->slotASC8W.read(addr);
             else if (this->isMSX1_ASC8X()) return this->slotASC8X.read(addr);
             else return 0xFF;
         }
 
         inline void slot_write(unsigned short addr, unsigned char value) {
             if (this->isMSX1()) this->slot.write(addr, value);
-            else if (this->isMSX1_GameMaster2()) this->slotGM2.write(addr, value);
             else if (this->isMSX1_ASC8()) this->slotASC8.write(addr, value);
-            else if (this->isMSX1_ASC8W()) this->slotASC8W.write(addr, value);
             else if (this->isMSX1_ASC8X()) this->slotASC8X.write(addr, value);
         }
 };

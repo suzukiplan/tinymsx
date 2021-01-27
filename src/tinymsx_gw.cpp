@@ -39,3 +39,6 @@ unsigned short tinymsx_backdrop(const void* context) { return ((TinyMSX*)context
 void tinymsx_load_bios_msx1_main(const void* context, void* bios, size_t size) { ((TinyMSX*)context)->loadBiosFromMemory(bios, size); }
 void tinymsx_setup_special_key1(const void* context, unsigned char c, int isTenKey) { ((TinyMSX*)context)->setupSpecialKey1(c, isTenKey); }
 void tinymsx_setup_special_key2(const void* context, unsigned char c, int isTenKey) { ((TinyMSX*)context)->setupSpecialKey2(c, isTenKey); }
+unsigned char* tinymsx_get_vram(const void* context) { return ((TinyMSX*)context)->tms9918->ctx.ram; }
+unsigned short tinymsx_get_nameTableAddr(const void* context) { return ((TinyMSX*)context)->tms9918->ctx.reg[2] << 10; }
+unsigned char* tinymsx_get_ram(const void* context) { return ((TinyMSX*)context)->ram; }

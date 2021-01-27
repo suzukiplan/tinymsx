@@ -79,7 +79,7 @@ extern unsigned char emu_key;
 - (void)keyDown:(NSEvent*)event
 {
     unichar c = [event.charactersIgnoringModifiers characterAtIndex:0];
-    //NSLog(@"keyDown: %04X", tolower(c));
+    NSLog(@"keyDown: %04X", tolower(c));
     switch (tolower(c)) {
         case 0xF703: emu_key |= TINYMSX_JOY_RI; break;
         case 0xF702: emu_key |= TINYMSX_JOY_LE; break;
@@ -91,6 +91,9 @@ extern unsigned char emu_key;
         case 0x007A: emu_key |= TINYMSX_JOY_T1; break;
         case 0x0031: emu_key |= TINYMSX_JOY_S1; break;
         case 0x0032: emu_key |= TINYMSX_JOY_S2; break;
+        case 0x0064: emu_printDump(); break;
+        case 0x0073: emu_keepRam(); break;
+        case 0x0065: emu_compareRam(); break;
     }
 }
 

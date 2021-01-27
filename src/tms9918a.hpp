@@ -245,7 +245,7 @@ class TMS9918A
 
     inline void updateRegister()
     {
-#ifdef DEBUG
+#if 0
         int previousMode = 0;
         if (ctx.reg[1] & 0b00010000) previousMode |= 1; // Mode 1
         if (ctx.reg[0] & 0b00000010) previousMode |= 2; // Mode 2
@@ -259,7 +259,7 @@ class TMS9918A
         if (!previousInterrupt && this->isEnabledInterrupt() && this->ctx.stat & 0x80) {
             this->detectBlank(this->arg);
         }
-#ifdef DEBUG
+#if 0
         int currentMode = 0;
         if (ctx.reg[1] & 0b00010000) currentMode |= 1; // Mode 1
         if (ctx.reg[0] & 0b00000010) currentMode |= 2; // Mode 2
@@ -403,7 +403,8 @@ class TMS9918A
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 16 / 2 + (pixelLine < 16 ? 0 : 8);
-                        for (int j = 0; j < 16; j++, x++) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -414,9 +415,10 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                         cur += 16;
-                        for (int j = 0; j < 16; j++, x++) {
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -427,7 +429,8 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
-                        }
+                            overflow = x == 0xFF;
+                       }
                     }
                 } else {
                     // 8x8 x 2
@@ -442,7 +445,8 @@ class TMS9918A
                             this->ctx.stat |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        for (int j = 0; j < 16; j++, x++) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 16; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -453,6 +457,7 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                     }
                 }
@@ -471,7 +476,8 @@ class TMS9918A
                         }
                         int pixelLine = lineNumber - y;
                         cur = sg + (ptn & 252) * 8 + pixelLine % 8 + (pixelLine < 8 ? 0 : 8);
-                        for (int j = 0; j < 8; j++, x++) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -482,9 +488,10 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                         cur += 16;
-                        for (int j = 0; j < 8; j++, x++) {
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -495,6 +502,7 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                     }
                 } else {
@@ -510,7 +518,8 @@ class TMS9918A
                             this->ctx.stat |= i;
                         }
                         cur = sg + ptn * 8 + lineNumber % 8;
-                        for (int j = 0; j < 8; j++, x++) {
+                        bool overflow = false;
+                        for (int j = 0; !overflow && j < 8; j++, x++) {
                             if (wlog[x]) {
                                 this->ctx.stat |= 0b00100000;
                             }
@@ -521,6 +530,7 @@ class TMS9918A
                                     wlog[x] = 1;
                                 }
                             }
+                            overflow = x == 0xFF;
                         }
                     }
                 }

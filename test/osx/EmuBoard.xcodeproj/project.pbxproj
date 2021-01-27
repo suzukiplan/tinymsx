@@ -36,9 +36,7 @@
 		74B4AA012595F0F400F60406 /* z80.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = z80.hpp; path = ../../../../src/z80.hpp; sourceTree = "<group>"; };
 		74B4AA022595F0F400F60406 /* tms9918a.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tms9918a.hpp; path = ../../../../src/tms9918a.hpp; sourceTree = "<group>"; };
 		74B4AA072595F10400F60406 /* cbios_main_msx1.rom */ = {isa = PBXFileReference; lastKnownFileType = file; name = cbios_main_msx1.rom; path = ../../../../bios/cbios_main_msx1.rom; sourceTree = "<group>"; };
-		74B4AA0C2599644D00F60406 /* msxslot_gm2.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = msxslot_gm2.hpp; path = ../../../../src/msxslot_gm2.hpp; sourceTree = "<group>"; };
 		74B4AA10259A224500F60406 /* msxslot_asc8.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = msxslot_asc8.hpp; path = ../../../../src/msxslot_asc8.hpp; sourceTree = "<group>"; };
-		74B4AA12259A306F00F60406 /* msxslot_asc8w.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = msxslot_asc8w.hpp; path = ../../../../src/msxslot_asc8w.hpp; sourceTree = "<group>"; };
 		94D1AB2521D86ADC00DC595E /* EmuBoard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EmuBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D1AB2821D86ADC00DC595E /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		94D1AB2921D86ADC00DC595E /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -84,9 +82,7 @@
 				74B4A9FB2595F0F400F60406 /* ay8910.hpp */,
 				74B4A9FF2595F0F400F60406 /* msxslot.hpp */,
 				74B4AA10259A224500F60406 /* msxslot_asc8.hpp */,
-				74B4AA12259A306F00F60406 /* msxslot_asc8w.hpp */,
 				7492488525B1DCD800B1EBC9 /* msxslot_asc8x.hpp */,
-				74B4AA0C2599644D00F60406 /* msxslot_gm2.hpp */,
 				74B4A9FD2595F0F400F60406 /* sn76489.hpp */,
 				74B4A9F92595F0F400F60406 /* tinymsx_def.h */,
 				74B4AA002595F0F400F60406 /* tinymsx_gw.cpp */,

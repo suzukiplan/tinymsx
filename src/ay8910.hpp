@@ -112,7 +112,7 @@ class AY8910
                     this->ctx.eFace = -1;
                     this->ctx.eState = 0x1F;
                 }
-                this->ctx.eHolding = 0;
+                this->ctx.eHolding = 1;
                 break;
         }
     }
