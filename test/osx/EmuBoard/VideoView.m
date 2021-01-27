@@ -94,6 +94,7 @@ extern unsigned char emu_key;
         case 0x0064: emu_printDump(); break;
         case 0x0073: emu_keepRam(); break;
         case 0x0065: emu_compareRam(); break;
+        case 0x006C: [self _openSaveData]; break;
     }
 }
 
@@ -112,6 +113,22 @@ extern unsigned char emu_key;
         case 0x0031: emu_key &= ~TINYMSX_JOY_S1; break;
         case 0x0032: emu_key &= ~TINYMSX_JOY_S2; break;
     }
+}
+
+- (void)_openSaveData
+{
+    NSOpenPanel* panel = [NSOpenPanel openPanel];
+    panel.allowsMultipleSelection = NO;
+    panel.canChooseDirectories = NO;
+    panel.canCreateDirectories = YES;
+    panel.canChooseFiles = YES;
+    panel.allowedFileTypes = @[ @"bin", @"dat" ];
+    [panel beginWithCompletionHandler:^(NSModalResponse result) {
+        if (!result) return;
+        NSData* data = [NSData dataWithContentsOfURL:panel.URL];
+        if (!data) return;
+        emu_loadState(data.bytes, data.length);
+    }];
 }
 
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* context)
